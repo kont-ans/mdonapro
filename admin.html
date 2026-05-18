@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>لوحة الإدارة — مدونتي</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <a href="/index.html" class="logo">✦ مدونتي</a>
+        <a href="/index.html" class="back-link">← الرئيسية</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container admin-container">
+
+      <!-- شاشة إدخال الرمز -->
+      <div id="token-gate" class="token-gate">
+        <div class="auth-card" style="max-width:420px;margin:60px auto">
+          <div class="auth-icon">🛡</div>
+          <h2 class="auth-title">لوحة الإدارة</h2>
+          <p class="auth-sub">هذه اللوحة محمية. احصل على رمز الدخول من البوت عبر الأمر <code>/admintoken</code></p>
+          <div id="gate-error" class="auth-error" style="display:none"></div>
+          <div class="auth-form" style="margin-top:20px">
+            <div class="form-group">
+              <label>رمز الإدارة</label>
+              <input type="password" id="token-input" placeholder="أدخل الرمز هنا"/>
+            </div>
+            <button class="btn-auth" onclick="checkToken()">دخول</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- لوحة الإدارة الكاملة -->
+      <div id="admin-panel" style="display:none">
+        <div class="admin-header-row">
+          <h1 class="admin-title">🛡 لوحة الإدارة</h1>
+          <button class="btn-logout" onclick="adminLogout()">خروج</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="total-posts">—</div>
+            <div class="stat-label">المقالات</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="total-views">—</div>
+            <div class="stat-label">المشاهدات</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="total-users">—</div>
+            <div class="stat-label">المستخدمون</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="latest-date">—</div>
+            <div class="stat-label">آخر نشر</div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('posts', this)">📝 المقالات</button>
+          <button class="tab"        onclick="switchTab('users', this)">👥 المستخدمون</button>
+        </div>
+
+        <section id="tab-posts" class="tab-panel">
+          <div style="overflow-x:auto">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>العنوان</th><th>التاريخ</th><th>المشاهدات</th><th>وسائط</th></tr></thead>
+              <tbody id="posts-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="tab-users" class="tab-panel" style="display:none">
+          <p class="admin-note">⚠️ إدارة المستخدمين (حظر / حذف) تتم من خلال البوت فقط عبر: <code>/ban</code> و<code>/deluser</code></p>
+          <div style="overflow-x:auto">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>الاسم</th><th>الإيميل</th><th>تاريخ الانضمام</th><th>الحالة</th></tr></thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>© <span id="year"></span> مدونتي — لوحة الإدارة</p>
+    </div>
+  </footer>
+
+  <script src="/auth.js"></script>
+  <script src="/admin.js"></script>
+</body>
+</html>

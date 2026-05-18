@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>تسجيل الدخول — مدونتي</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body class="auth-page">
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <a href="/index.html" class="logo">✦ مدونتي</a>
+        <a href="/index.html" class="back-link">← الرئيسية</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <div class="auth-icon">🔐</div>
+      <h1 class="auth-title">تسجيل الدخول</h1>
+      <p class="auth-sub">مرحباً بعودتك!</p>
+
+      <div id="error-msg"   class="auth-error"   style="display:none"></div>
+      <div id="success-msg" class="auth-success"  style="display:none"></div>
+
+      <form id="login-form" class="auth-form" onsubmit="doLogin(event)">
+        <div class="form-group">
+          <label>البريد الإلكتروني</label>
+          <input type="email" id="email" placeholder="example@email.com" required/>
+        </div>
+        <div class="form-group">
+          <label>كلمة المرور</label>
+          <div class="input-wrap">
+            <input type="password" id="password" placeholder="••••••••" required/>
+            <button type="button" class="toggle-pw" onclick="togglePw('password')">👁</button>
+          </div>
+        </div>
+        <button type="submit" class="btn-auth" id="login-btn">دخول</button>
+      </form>
+
+      <div class="auth-footer">
+        <p>ليس لديك حساب؟ <a href="/register.html" class="auth-link">إنشاء حساب</a></p>
+      </div>
+    </div>
+  </main>
+
+  <script src="/auth.js"></script>
+  <script>
+    async function doLogin(e) {
+      e.preventDefault();
+      var email    = document.getElementById('email').value.trim().toLowerCase();
+      var password = document.getElementById('password').value;
+      var btn      = document.getElementById('login-btn');
+      var errEl    = document.getElementById('error-msg');
+      var okEl     = document.getElementById('success-msg');
+
+      errEl.style.display = 'none';
+      okEl.style.display  = 'none';
+      btn.textContent     = '⏳ جاري...';
+      btn.disabled        = true;
+
+      try {
+        var users = await getUsers();
+        var hash  = await hashPassword(password);
+        var user  = null;
+        for (var i = 0; i < users.length; i++) {
+          if (users[i].email === email && users[i].password_hash === hash) {
+            user = users[i]; break;
+          }
+        }
+        if (!user) {
+          showError(errEl, 'البريد الإلكتروني أو كلمة المرور غير صحيحة.');
+        } else if (user.banned) {
+          showError(errEl, 'هذا الحساب محظور. تواصل مع الإدارة.');
+        } else {
+          saveSession(user);
+          okEl.textContent    = '✅ مرحباً ' + user.username + '! جاري التحويل...';
+          okEl.style.display  = 'block';
+          setTimeout(function(){ window.location.href = '/index.html'; }, 1200);
+        }
+      } catch(err) {
+        showError(errEl, 'حدث خطأ، حاول مجدداً.');
+        console.error(err);
+      } finally {
+        btn.textContent = 'دخول';
+        btn.disabled    = false;
+      }
+    }
+  </script>
+</body>
+</html>
