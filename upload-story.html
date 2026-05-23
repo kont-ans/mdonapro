@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - قصة جديدة</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.story-composer{min-height:100vh;background:#000;display:flex;flex-direction:column;position:relative}
+.story-bg{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;opacity:.7}
+.story-controls{position:relative;z-index:10;display:flex;flex-direction:column;height:100vh}
+.story-top-bar{display:flex;align-items:center;justify-content:space-between;padding:16px;padding-top:calc(16px + env(safe-area-inset-top))}
+.story-tools{display:flex;gap:16px}
+.story-tool-btn{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;cursor:pointer}
+.story-canvas{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+.story-text-input{background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:20px;text-align:center;width:80%;outline:none;caret-color:#fff}
+.story-text-input::placeholder{color:rgba(255,255,255,.5)}
+.story-bottom-bar{display:flex;align-items:center;justify-content:space-between;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+.story-send-btn{background:var(--blue);color:#fff;border-radius:50%;width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer}
+.bg-presets{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.bg-preset{width:36px;height:36px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .2s;flex-shrink:0}
+.bg-preset.selected{border-color:#fff}
+.upload-story-btn{background:rgba(255,255,255,.2);color:#fff;border:2px solid rgba(255,255,255,.4);border-radius:24px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="story-composer">
+  <div style="position:absolute;inset:0;z-index:0" id="bg-layer">
+    <div id="solid-bg" style="width:100%;height:100%;background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+  </div>
+  <img id="story-img-bg" class="story-bg" style="display:none">
+  <div class="story-controls">
+    <div class="story-top-bar">
+      <a href="javascript:history.back()" style="color:#fff;font-size:24px"><i class="fa fa-times"></i></a>
+      <div class="story-tools">
+        <div class="story-tool-btn" onclick="addText()"><i class="fa fa-font"></i></div>
+        <div class="story-tool-btn" onclick="document.getElementById('story-img').click()"><i class="fa fa-image"></i></div>
+        <div class="story-tool-btn" onclick="addSticker()"><i class="fa fa-smile-o"></i></div>
+      </div>
+    </div>
+    <div class="story-canvas">
+      <input type="text" class="story-text-input" id="story-text" placeholder="اكتب شيئاً..." maxlength="150" style="display:none">
+    </div>
+    <div class="story-bottom-bar">
+      <div>
+        <div class="bg-presets" id="bg-presets">
+          <div class="bg-preset selected" style="background:linear-gradient(135deg,#667eea,#764ba2)" onclick="setBg('linear-gradient(135deg,#667eea,#764ba2)',this)"></div>
+          <div class="bg-preset" style="background:linear-gradient(135deg,#f093fb,#f5576c)" onclick="setBg('linear-gradient(135deg,#f093fb,#f5576c)',this)"></div>
+          <div class="bg-preset" style="background:linear-gradient(135deg,#4facfe,#00f2fe)" onclick="setBg('linear-gradient(135deg,#4facfe,#00f2fe)',this)"></div>
+          <div class="bg-preset" style="background:linear-gradient(135deg,#43e97b,#38f9d7)" onclick="setBg('linear-gradient(135deg,#43e97b,#38f9d7)',this)"></div>
+          <div class="bg-preset" style="background:linear-gradient(135deg,#fa709a,#fee140)" onclick="setBg('linear-gradient(135deg,#fa709a,#fee140)',this)"></div>
+          <div class="bg-preset" style="background:#000" onclick="setBg('#000',this)"></div>
+          <div class="bg-preset" style="background:#fff;border:1px solid var(--border)" onclick="setBg('#fff',this)"></div>
+          <button class="upload-story-btn" onclick="document.getElementById('story-img').click()"><i class="fa fa-image"></i> صورة</button>
+        </div>
+      </div>
+      <div class="story-send-btn" onclick="publishStory()"><i class="fa fa-paper-plane"></i></div>
+    </div>
+  </div>
+  <input type="file" id="story-img" accept="image/*" style="display:none" onchange="loadStoryImg(this)">
+</div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let currentUser, storyImageData=null;
+async function init() {
+  await InstaMina.init();
+  currentUser=InstaMina.requireAuth();
+  if(!currentUser) return;
+}
+function addText() {
+  const input=document.getElementById('story-text');
+  input.style.display=input.style.display==='none'?'block':'none';
+  if(input.style.display==='block') input.focus();
+}
+function setBg(gradient, el) {
+  document.querySelectorAll('.bg-preset').forEach(p=>p.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('solid-bg').style.background=gradient;
+  document.getElementById('story-img-bg').style.display='none';
+  document.getElementById('solid-bg').style.display='block';
+  storyImageData=null;
+}
+function loadStoryImg(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    storyImageData=e.target.result;
+    const imgBg=document.getElementById('story-img-bg');
+    imgBg.src=storyImageData;
+    imgBg.style.display='block';
+    document.getElementById('solid-bg').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+function addSticker() {
+  const stickers=['❤️','🔥','😍','✨','🎉','👏','😂','🙌','💯','🤩'];
+  const s=stickers[Math.floor(Math.random()*stickers.length)];
+  const canvas=document.querySelector('.story-canvas');
+  const span=document.createElement('span');
+  span.style.cssText='position:absolute;font-size:40px;cursor:move;user-select:none';
+  span.textContent=s;
+  span.style.top=Math.random()*40+30+'%';
+  span.style.left=Math.random()*60+10+'%';
+  canvas.appendChild(span);
+}
+async function publishStory() {
+  const text=document.getElementById('story-text').value.trim();
+  if(!storyImageData&&!text){showToast('أضف صورة أو نص');return;}
+  await InstaMina.createStory({userId:currentUser.id,image:storyImageData,text});
+  showToast('تم نشر القصة! 🎉');
+  setTimeout(()=>window.location.href='feed.html',1000);
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - البروفايل</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.profile-header { padding:16px; }
+.profile-top { display:flex; align-items:center; gap:16px; margin-bottom:16px; }
+.profile-avatar { position:relative; }
+.profile-stats { display:flex; gap:24px; }
+.stat-item { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; }
+.stat-num { font-size:17px; font-weight:700; }
+.stat-label { font-size:12px; color:var(--text2); }
+.profile-name { font-weight:700; font-size:15px; }
+.profile-bio { font-size:14px; line-height:1.6; white-space:pre-wrap; }
+.profile-website { color:var(--blue); font-size:14px; font-weight:600; }
+.profile-actions { display:flex; gap:8px; margin-top:12px; }
+.posts-tabs { display:flex; border-top:1px solid var(--border); }
+.posts-tab { flex:1; display:flex; align-items:center; justify-content:center; padding:12px; color:var(--text2); cursor:pointer; border-top:2px solid transparent; transition:all .2s; font-size:18px; }
+.posts-tab.active { color:var(--text); border-top-color:var(--text); }
+.grid-item { position:relative; }
+.grid-item .overlay { position:absolute; inset:0; background:rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; gap:12px; color:#fff; font-weight:700; font-size:13px; opacity:0; transition:opacity .2s; }
+.grid-item:hover .overlay { opacity:1; }
+.reel-icon { position:absolute; top:6px; right:6px; color:#fff; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title" id="page-username">بروفايل</div>
+  <div class="header-actions">
+    <button onclick="showMenu()"><i class="fa fa-bars"></i></button>
+  </div>
+</div>
+<div class="page-content">
+  <div id="profile-content"></div>
+</div>
+<nav class="nav-bottom">
+  <a href="feed.html"><i class="fa fa-home"></i></a>
+  <a href="explore.html"><i class="fa fa-search"></i></a>
+  <a href="create.html"><i class="fa fa-plus-square-o" style="font-size:30px"></i></a>
+  <a href="reels.html"><i class="fa fa-film"></i></a>
+  <a href="profile.html" class="active"><i class="fa fa-user-o"></i></a>
+</nav>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let currentUser, profileUser, activeTab='posts';
+async function init() {
+  await InstaMina.init();
+  currentUser = InstaMina.requireAuth();
+  if(!currentUser) return;
+  const params = new URLSearchParams(location.search);
+  const userId = params.get('userId') ? Number(params.get('userId')) : currentUser.id;
+  profileUser = await InstaMina.getUserById(userId);
+  if(!profileUser) { document.getElementById('profile-content').innerHTML='<div class="empty-state"><i class="fa fa-user"></i><h3>المستخدم غير موجود</h3></div>'; return; }
+  document.getElementById('page-username').textContent = profileUser.username;
+  await renderProfile();
+}
+async function renderProfile() {
+  const isOwn = profileUser.id === currentUser.id;
+  const isFollowing = !isOwn && !!(await InstaMina.getFollow(currentUser.id, profileUser.id));
+  const posts = await InstaMina.getPostsByUser(profileUser.id);
+  const reels = posts.filter(p=>p.type==='reel');
+  const regularPosts = posts.filter(p=>p.type!=='reel');
+  const saved = isOwn ? await InstaMina.getSavedPosts(currentUser.id) : [];
+  const content = document.getElementById('profile-content');
+  content.innerHTML=`
+    <div class="profile-header">
+      <div class="profile-top">
+        <div class="profile-avatar">
+          ${profileUser.avatar?`<img src="${profileUser.avatar}" class="avatar" style="width:80px;height:80px">`:`<div class="avatar-placeholder" style="width:80px;height:80px;font-size:28px">${profileUser.username[0].toUpperCase()}</div>`}
+        </div>
+        <div class="profile-stats">
+          <div class="stat-item"><div class="stat-num">${InstaMina.formatCount(regularPosts.length)}</div><div class="stat-label">منشور</div></div>
+          <div class="stat-item" onclick="window.location.href='followers.html?userId=${profileUser.id}'"><div class="stat-num">${InstaMina.formatCount(profileUser.followersCount||0)}</div><div class="stat-label">متابِع</div></div>
+          <div class="stat-item" onclick="window.location.href='following.html?userId=${profileUser.id}'"><div class="stat-num">${InstaMina.formatCount(profileUser.followingCount||0)}</div><div class="stat-label">يتابع</div></div>
+        </div>
+      </div>
+      <div class="profile-name">${profileUser.fullName||profileUser.username}${profileUser.isVerified?'<i class="fa fa-check-circle verified"></i>':''}</div>
+      ${profileUser.bio?`<div class="profile-bio">${profileUser.bio}</div>`:''}
+      ${profileUser.website?`<a href="${profileUser.website}" class="profile-website" target="_blank">${profileUser.website}</a>`:''}
+      <div class="profile-actions">
+        ${isOwn?`<a href="edit-profile.html" class="btn btn-secondary btn-sm" style="flex:1">تعديل الملف الشخصي</a><a href="qr-code.html" class="btn btn-secondary btn-sm"><i class="fa fa-qrcode"></i></a>`:`
+          <button class="btn ${isFollowing?'btn-secondary':'btn-primary'} btn-sm" style="flex:1" onclick="toggleFollow()" id="follow-btn">${isFollowing?'إلغاء المتابعة':'متابعة'}</button>
+          <a href="messages.html?userId=${profileUser.id}" class="btn btn-secondary btn-sm" style="flex:1">مراسلة</a>
+          <button class="btn btn-secondary btn-sm" onclick="showUserMenu()"><i class="fa fa-chevron-down"></i></button>`}
+      </div>
+    </div>
+    <div class="posts-tabs">
+      <div class="posts-tab active" onclick="switchTab('posts',this)" id="tab-posts"><i class="fa fa-th"></i></div>
+      <div class="posts-tab" onclick="switchTab('reels',this)" id="tab-reels"><i class="fa fa-film"></i></div>
+      ${isOwn?`<div class="posts-tab" onclick="switchTab('saved',this)"><i class="fa fa-bookmark-o"></i></div>`:''}
+    </div>
+    <div class="grid-3" id="posts-grid"></div>
+    <div id="empty-grid"></div>`;
+  renderGrid(regularPosts);
+}
+async function renderGrid(posts) {
+  const grid = document.getElementById('posts-grid');
+  const emptyEl = document.getElementById('empty-grid');
+  grid.innerHTML='';
+  if(posts.length===0) {
+    emptyEl.innerHTML='<div class="empty-state"><i class="fa fa-camera"></i><h3>لا توجد منشورات</h3><p>شارك أول لحظاتك</p></div>';
+    return;
+  }
+  emptyEl.innerHTML='';
+  for(const p of posts) {
+    const item=document.createElement('div'); item.className='grid-item';
+    item.onclick=()=>window.location.href=`post.html?id=${p.id}`;
+    item.innerHTML=p.image?`<img src="${p.image}" style="width:100%;height:100%;object-fit:cover"><div class="overlay"><span><i class="fa fa-heart"></i> ${p.likesCount||0}</span><span><i class="fa fa-comment"></i> ${p.commentsCount||0}</span></div>${p.type==='reel'?'<i class="fa fa-play reel-icon"></i>':''}`:
+    `<div style="width:100%;height:100%;aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center"><i class="fa fa-image" style="color:var(--border)"></i></div>`;
+    grid.appendChild(item);
+  }
+}
+async function switchTab(tab, el) {
+  document.querySelectorAll('.posts-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  activeTab=tab;
+  const posts = await InstaMina.getPostsByUser(profileUser.id);
+  if(tab==='posts') renderGrid(posts.filter(p=>p.type!=='reel'));
+  else if(tab==='reels') renderGrid(posts.filter(p=>p.type==='reel'));
+  else if(tab==='saved') {
+    const savedItems = await InstaMina.getSavedPosts(currentUser.id);
+    const savedPosts=[];
+    for(const s of savedItems) { const p=await InstaMina.getPostById(s.postId); if(p) savedPosts.push(p); }
+    renderGrid(savedPosts);
+  }
+}
+async function toggleFollow() {
+  const btn=document.getElementById('follow-btn');
+  const isFollowing=btn.textContent.trim()==='إلغاء المتابعة';
+  const now = await InstaMina.toggleFollow(currentUser.id, profileUser.id);
+  btn.textContent = now?'إلغاء المتابعة':'متابعة';
+  btn.className = now?'btn btn-secondary btn-sm':'btn btn-primary btn-sm';
+  if(now) await InstaMina.addNotification({userId:profileUser.id,type:'follow',fromId:currentUser.id,text:`${currentUser.username} بدأ متابعتك`});
+  profileUser = await InstaMina.getUserById(profileUser.id);
+  document.querySelector('.stat-num').textContent = profileUser.followersCount||0;
+}
+function showMenu() {
+  const isOwn = profileUser.id===currentUser.id;
+  const overlay=document.createElement('div'); overlay.className='overlay';
+  overlay.innerHTML=`<div class="modal"><div style="display:flex;flex-direction:column">
+    ${isOwn?`<a href="settings.html" style="padding:16px;border-bottom:1px solid var(--border);display:block">الإعدادات</a>
+    <a href="activity.html" style="padding:16px;border-bottom:1px solid var(--border);display:block">سجل النشاط</a>
+    <a href="saved.html" style="padding:16px;border-bottom:1px solid var(--border);display:block">المحفوظات</a>
+    <button onclick="InstaMina.logout()" style="padding:16px;color:var(--red);border-bottom:1px solid var(--border)">تسجيل الخروج</button>`:''}
+    <button onclick="this.closest('.overlay').remove()" style="padding:16px">إلغاء</button>
+  </div></div>`;
+  overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+  document.body.appendChild(overlay);
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

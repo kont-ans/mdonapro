@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - لوحة التحكم</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.admin-login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)}
+.admin-box{background:rgba(255,255,255,.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:40px;width:100%;max-width:380px;text-align:center}
+.admin-logo{font-size:56px;margin-bottom:16px}
+.admin-title{font-size:24px;font-weight:700;color:#fff;margin-bottom:4px}
+.admin-sub{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:32px}
+.admin-input{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 16px;color:#fff;font-size:14px;outline:none;margin-bottom:12px}
+.admin-input::placeholder{color:rgba(255,255,255,.4)}
+.admin-input:focus{border-color:rgba(255,255,255,.4)}
+.admin-btn{width:100%;background:var(--blue);color:#fff;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;border:none;margin-top:8px;transition:background .2s}
+.admin-btn:hover{background:var(--blue-dark)}
+.admin-err{color:#ff6b6b;font-size:13px;margin-top:8px;display:none}
+.back-link{color:rgba(255,255,255,.5);font-size:13px;margin-top:20px;display:block}
+.back-link:hover{color:#fff}
+</style>
+</head>
+<body style="background:#0f3460">
+<div class="admin-login-wrap">
+  <div class="admin-box">
+    <div class="admin-logo">🛡️</div>
+    <div class="admin-title">لوحة التحكم</div>
+    <div class="admin-sub">إنستا-مينا - منطقة مقيدة</div>
+    <input type="text" class="admin-input" id="admin-username" placeholder="اسم المستخدم">
+    <input type="password" class="admin-input" id="admin-password" placeholder="كلمة المرور">
+    <div class="admin-err" id="admin-err">اسم المستخدم أو كلمة المرور غير صحيحة</div>
+    <button class="admin-btn" onclick="doAdminLogin()">دخول</button>
+    <a href="index.html" class="back-link">← العودة للتطبيق</a>
+  </div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+const ADMIN_USER='admin';
+const ADMIN_PASS='admin@instamina2024';
+async function doAdminLogin() {
+  const u=document.getElementById('admin-username').value.trim();
+  const p=document.getElementById('admin-password').value;
+  const errEl=document.getElementById('admin-err');
+  errEl.style.display='none';
+  if(u===ADMIN_USER&&p===ADMIN_PASS) {
+    sessionStorage.setItem('instamina_admin','true');
+    window.location.href='admin-dashboard.html';
+  } else {
+    await InstaMina.init();
+    const user=await InstaMina.getUserByUsername(u);
+    if(user&&user.isAdmin&&user.password===p) {
+      sessionStorage.setItem('instamina_admin','true');
+      sessionStorage.setItem('instamina_admin_user',JSON.stringify(user));
+      window.location.href='admin-dashboard.html';
+    } else {
+      errEl.style.display='block';
+    }
+  }
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')doAdminLogin();});
+</script>
+</body>
+</html>

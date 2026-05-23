@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - ريل جديد</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.upload-area{border:2px dashed var(--border);border-radius:12px;padding:50px 20px;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--bg2);margin:16px}
+.upload-area i{font-size:56px;color:var(--text2);margin-bottom:16px;display:block}
+.reel-preview{position:relative;background:#000;border-radius:12px;margin:16px;overflow:hidden}
+.reel-preview video{width:100%;max-height:400px;display:block}
+.cover-selector{padding:0 16px 12px;border-bottom:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">ريل جديد</div>
+  <button onclick="publishReel()" style="color:var(--blue);font-weight:700;font-size:15px">نشر</button>
+</div>
+<div class="page-content" style="padding-bottom:20px">
+  <div id="upload-section">
+    <div class="upload-area" onclick="document.getElementById('video-input').click()">
+      <i class="fa fa-film"></i>
+      <h3 style="font-size:18px;margin-bottom:8px">اختر فيديو أو صورة للريل</h3>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:16px">مدة الفيديو: حتى 90 ثانية</p>
+      <button class="btn btn-primary" onclick="event.stopPropagation();document.getElementById('video-input').click()"><i class="fa fa-upload"></i> رفع من المعرض</button>
+      <input type="file" id="video-input" accept="video/*,image/*" style="display:none" onchange="previewReel(this)">
+    </div>
+    <div style="padding:0 16px">
+      <button class="btn btn-secondary btn-full" onclick="window.location.href='camera.html'"><i class="fa fa-camera"></i> التقط بالكاميرا</button>
+    </div>
+  </div>
+  <div id="preview-section" style="display:none">
+    <div class="reel-preview" id="reel-preview"></div>
+    <div style="padding:16px;border-bottom:1px solid var(--border)">
+      <textarea class="form-input" id="reel-caption" placeholder="أضف تعليقاً..." rows="3" maxlength="2200"></textarea>
+    </div>
+    <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)">
+      <span style="font-weight:600">إضافة موقع</span>
+      <a href="location.html" style="color:var(--text2)"><i class="fa fa-map-marker"></i></a>
+    </div>
+    <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)">
+      <span style="font-weight:600">مزامنة مع الملف الشخصي</span>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div style="padding:16px">
+      <button class="btn btn-secondary btn-full" onclick="resetReel()"><i class="fa fa-refresh"></i> اختيار فيديو آخر</button>
+    </div>
+  </div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let currentUser, mediaData=null, mediaType='video';
+async function init() {
+  await InstaMina.init();
+  currentUser=InstaMina.requireAuth();
+  if(!currentUser) return;
+}
+function previewReel(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    mediaData=e.target.result;
+    mediaType=file.type.startsWith('video')?'video':'image';
+    document.getElementById('upload-section').style.display='none';
+    document.getElementById('preview-section').style.display='block';
+    const prev=document.getElementById('reel-preview');
+    if(mediaType==='video'){
+      prev.innerHTML=`<video src="${mediaData}" controls style="width:100%;max-height:500px"></video>`;
+    } else {
+      prev.innerHTML=`<img src="${mediaData}" style="width:100%;max-height:500px;object-fit:cover">`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+function resetReel() {
+  mediaData=null;
+  document.getElementById('upload-section').style.display='block';
+  document.getElementById('preview-section').style.display='none';
+}
+async function publishReel() {
+  if(!mediaData){showToast('يرجى اختيار فيديو');return;}
+  const caption=document.getElementById('reel-caption').value.trim();
+  showToast('جارٍ النشر...');
+  const data={userId:currentUser.id,caption,type:'reel'};
+  if(mediaType==='video') data.video=mediaData;
+  else data.image=mediaData;
+  await InstaMina.createPost(data);
+  showToast('تم نشر الريل! 🎉');
+  setTimeout(()=>window.location.href='reels.html',1200);
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

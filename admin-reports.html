@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إدارة البلاغات</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+body{background:var(--bg2)}
+.admin-bar{background:linear-gradient(135deg,#0f3460,#16213e);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.admin-bar a{color:rgba(255,255,255,.7);font-size:20px}
+.admin-bar-title{color:#fff;font-weight:700;font-size:17px;flex:1}
+.report-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;margin:0 12px 12px;padding:16px}
+.report-type{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#fde8ea;color:var(--red);margin-bottom:8px}
+.report-reason{font-size:14px;font-weight:600;margin-bottom:4px}
+.report-meta{font-size:12px;color:var(--text2)}
+.report-actions{display:flex;gap:8px;margin-top:12px}
+.resolved{opacity:.5}
+</style>
+</head>
+<body>
+<div class="admin-bar">
+  <a href="admin-dashboard.html"><i class="fa fa-arrow-right"></i></a>
+  <div class="admin-bar-title">البلاغات</div>
+  <span id="reports-count" style="color:rgba(255,255,255,.7);font-size:13px">...</span>
+</div>
+<div style="padding:12px 0" id="reports-list"><div class="loader"><div class="spinner"></div></div></div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+async function init() {
+  if(sessionStorage.getItem('instamina_admin')!=='true'){window.location.href='admin-login.html';return;}
+  await InstaMina.init();
+  const reports=await InstaMina.getAllReports();
+  document.getElementById('reports-count').textContent=reports.length+' بلاغ';
+  const list=document.getElementById('reports-list');
+  list.innerHTML='';
+  if(reports.length===0){list.innerHTML='<div class="empty-state"><i class="fa fa-flag"></i><h3>لا توجد بلاغات</h3></div>';return;}
+  for(const r of reports) {
+    const reporter=await InstaMina.getUserById(r.reporterId);
+    const card=document.createElement('div'); card.className='report-card'+(r.resolved?' resolved':''); card.dataset.id=r.id;
+    card.innerHTML=`
+      <div class="report-type">${r.type==='post'?'منشور':'مستخدم'}</div>
+      <div class="report-reason">${r.reason||'محتوى مخالف'}</div>
+      <div class="report-meta">المُبلِّغ: ${reporter?.username||'مجهول'} · ${InstaMina.timeAgo(r.createdAt)} · المعرف: #${r.targetId}</div>
+      ${r.resolved?'<div style="color:#58c322;font-size:13px;margin-top:8px"><i class="fa fa-check"></i> تم الحل</div>':''}
+      <div class="report-actions">
+        ${!r.resolved?`<button class="btn btn-secondary btn-sm" onclick="resolveReport(${r.id})"><i class="fa fa-check"></i> تم الحل</button>`:''}
+        ${r.type==='post'?`<button class="btn btn-danger btn-sm" onclick="deleteTarget(${r.id},'post',${r.targetId})"><i class="fa fa-trash"></i> حذف المنشور</button>`:
+        `<button class="btn btn-danger btn-sm" onclick="banUser(${r.targetId})"><i class="fa fa-ban"></i> حظر المستخدم</button>`}
+        <button class="btn btn-secondary btn-sm" onclick="card${r.id}.remove()">تجاهل</button>
+      </div>`;
+    card.id=`card${r.id}`;
+    list.appendChild(card);
+  }
+}
+async function resolveReport(id) {
+  const tx=db.transaction('reports','readwrite');
+  const req=tx.objectStore('reports').get(id);
+  req.onsuccess=()=>{const r=req.result;if(r){r.resolved=true;tx.objectStore('reports').put(r);}};
+  document.querySelector(`[data-id="${id}"]`)?.classList.add('resolved');
+  showToast('تم تحديد البلاغ كمحلول');
+}
+async function deleteTarget(reportId,type,targetId) {
+  if(!confirm('حذف المنشور؟')) return;
+  await InstaMina.deletePost(targetId);
+  await resolveReport(reportId);
+  showToast('تم حذف المنشور');
+}
+async function banUser(userId) {
+  if(!confirm('حظر المستخدم؟')) return;
+  await InstaMina.updateUser(userId,{isBanned:true});
+  showToast('تم الحظر');
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

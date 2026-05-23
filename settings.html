@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - الإعدادات</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.settings-section{border-bottom:1px solid var(--border);margin-bottom:8px}
+.settings-title{padding:12px 16px;font-size:12px;font-weight:700;color:var(--text2);background:var(--bg2)}
+.settings-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;transition:background .15s}
+.settings-item:hover{background:var(--bg2)}
+.settings-item-left{display:flex;align-items:center;gap:12px}
+.settings-item i{width:24px;text-align:center;font-size:18px}
+.settings-item-text{font-size:15px}
+.settings-item-sub{font-size:12px;color:var(--text2);margin-top:1px}
+.toggle{width:44px;height:24px;background:var(--border);border-radius:12px;position:relative;cursor:pointer;transition:background .3s}
+.toggle.on{background:var(--blue)}
+.toggle::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:2px;right:2px;transition:right .3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{right:22px}
+.change-pwd-form{padding:16px;display:none}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">الإعدادات</div>
+</div>
+<div class="page-content" style="padding-bottom:20px">
+  <div class="settings-section">
+    <div class="settings-title">الحساب</div>
+    <div class="settings-item" onclick="window.location.href='edit-profile.html'">
+      <div class="settings-item-left"><i class="fa fa-user-circle-o"></i><div><div class="settings-item-text">تعديل الملف الشخصي</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+    <div class="settings-item" onclick="toggleSection('pwd-section')">
+      <div class="settings-item-left"><i class="fa fa-lock"></i><div><div class="settings-item-text">تغيير كلمة المرور</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+    <div class="change-pwd-form" id="pwd-section">
+      <div class="form-group"><input type="password" class="form-input" id="old-pwd" placeholder="كلمة المرور الحالية"></div>
+      <div class="form-group"><input type="password" class="form-input" id="new-pwd" placeholder="كلمة المرور الجديدة"></div>
+      <div class="form-group"><input type="password" class="form-input" id="confirm-pwd" placeholder="تأكيد كلمة المرور الجديدة"></div>
+      <button class="btn btn-primary btn-full" onclick="changePwd()">حفظ كلمة المرور</button>
+    </div>
+    <div class="settings-item" onclick="window.location.href='blocked.html'">
+      <div class="settings-item-left"><i class="fa fa-ban"></i><div><div class="settings-item-text">الحسابات المحظورة</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+    <div class="settings-item" onclick="window.location.href='activity.html'">
+      <div class="settings-item-left"><i class="fa fa-history"></i><div><div class="settings-item-text">سجل النشاط</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+    <div class="settings-item" onclick="window.location.href='verify-request.html'">
+      <div class="settings-item-left"><i class="fa fa-check-circle" style="color:var(--blue)"></i><div><div class="settings-item-text">طلب التوثيق</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-title">التفضيلات</div>
+    <div class="settings-item">
+      <div class="settings-item-left"><i class="fa fa-moon-o"></i><div><div class="settings-item-text">الوضع الليلي</div></div></div>
+      <div class="toggle" id="dark-toggle" onclick="toggleDark()"></div>
+    </div>
+    <div class="settings-item">
+      <div class="settings-item-left"><i class="fa fa-bell-o"></i><div><div class="settings-item-text">الإشعارات</div></div></div>
+      <div class="toggle on" id="notif-toggle" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="settings-item">
+      <div class="settings-item-left"><i class="fa fa-globe"></i><div><div class="settings-item-text">اللغة</div><div class="settings-item-sub">العربية</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-title">المعلومات</div>
+    <div class="settings-item" onclick="window.location.href='privacy-policy.html'">
+      <div class="settings-item-left"><i class="fa fa-shield"></i><div><div class="settings-item-text">سياسة الخصوصية</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+    <div class="settings-item" onclick="window.location.href='terms.html'">
+      <div class="settings-item-left"><i class="fa fa-file-text-o"></i><div><div class="settings-item-text">شروط الاستخدام</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+    <div class="settings-item" onclick="window.location.href='help.html'">
+      <div class="settings-item-left"><i class="fa fa-question-circle-o"></i><div><div class="settings-item-text">مركز المساعدة</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+    <div class="settings-item" onclick="showAbout()">
+      <div class="settings-item-left"><i class="fa fa-info-circle"></i><div><div class="settings-item-text">حول التطبيق</div><div class="settings-item-sub">إنستا-مينا v1.0</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-item" onclick="exportData()">
+      <div class="settings-item-left"><i class="fa fa-download" style="color:#58c322"></i><div><div class="settings-item-text">تصدير بياناتي</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+    <div class="settings-item" onclick="clearCache()">
+      <div class="settings-item-left"><i class="fa fa-trash-o" style="color:var(--text2)"></i><div><div class="settings-item-text">مسح ذاكرة التخزين المؤقت</div></div></div>
+      <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+    </div>
+  </div>
+  <div style="padding:16px">
+    <button class="btn btn-danger btn-full" onclick="if(confirm('هل تريد تسجيل الخروج؟'))InstaMina.logout()">
+      <i class="fa fa-sign-out"></i> تسجيل الخروج
+    </button>
+  </div>
+  <div style="text-align:center;color:var(--text2);font-size:12px;padding-bottom:20px">إنستا-مينا v1.0 · جميع الحقوق محفوظة</div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let currentUser;
+async function init() {
+  await InstaMina.init();
+  currentUser = InstaMina.requireAuth();
+  if(!currentUser) return;
+  const dm=localStorage.getItem('instamina_darkmode')==='true';
+  if(dm) document.getElementById('dark-toggle').classList.add('on');
+}
+function toggleDark() {
+  const toggle=document.getElementById('dark-toggle');
+  const isDark=toggle.classList.toggle('on');
+  localStorage.setItem('instamina_darkmode',isDark);
+  document.documentElement.classList.toggle('dark',isDark);
+}
+function toggleSection(id) {
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='block'?'none':'block';
+}
+async function changePwd() {
+  const old=document.getElementById('old-pwd').value;
+  const nw=document.getElementById('new-pwd').value;
+  const conf=document.getElementById('confirm-pwd').value;
+  if(!old||!nw||!conf) {showToast('يرجى ملء جميع الحقول');return;}
+  if(old!==currentUser.password) {showToast('كلمة المرور الحالية غير صحيحة');return;}
+  if(nw!==conf) {showToast('كلمة المرور الجديدة غير متطابقة');return;}
+  if(nw.length<6) {showToast('كلمة المرور يجب أن تكون 6 أحرف على الأقل');return;}
+  const updated=await InstaMina.updateUser(currentUser.id,{password:nw});
+  InstaMina.setCurrentUser(updated);
+  currentUser=updated;
+  showToast('تم تغيير كلمة المرور ✓');
+  document.getElementById('pwd-section').style.display='none';
+}
+async function exportData() {
+  const data=await InstaMina.exportAll();
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`instamina_data_${Date.now()}.json`; a.click();
+  showToast('تم تصدير البيانات');
+}
+function clearCache() {
+  if(confirm('هل تريد مسح ذاكرة التخزين المؤقت؟')) {
+    caches?.keys()?.then(keys=>keys.forEach(k=>caches.delete(k)));
+    showToast('تم المسح');
+  }
+}
+function showAbout() {
+  const overlay=document.createElement('div'); overlay.className='overlay';
+  overlay.innerHTML=`<div class="modal"><div class="modal-header">حول التطبيق</div><div style="padding:24px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">📸</div>
+    <div style="font-size:22px;font-weight:700;margin-bottom:8px">إنستا-مينا</div>
+    <div style="color:var(--text2);font-size:14px;margin-bottom:16px">منصة التواصل الاجتماعي الأولى عربياً</div>
+    <div style="font-size:13px;color:var(--text2)">الإصدار 1.0.0</div>
+    <button onclick="this.closest('.overlay').remove()" class="btn btn-secondary btn-full" style="margin-top:20px">إغلاق</button>
+  </div></div>`;
+  overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+  document.body.appendChild(overlay);
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

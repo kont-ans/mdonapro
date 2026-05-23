@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - الإشعارات</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.notif-item{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:background .2s;border-bottom:1px solid var(--border)}
+.notif-item:hover{background:var(--bg2)}
+.notif-item.unread{background:color-mix(in srgb,var(--blue) 8%,var(--bg))}
+.notif-text{flex:1;font-size:14px;line-height:1.4}
+.notif-text span{font-weight:700}
+.notif-time{font-size:11px;color:var(--text2)}
+.notif-thumb{width:44px;height:44px;object-fit:cover;border-radius:4px}
+.notif-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
+.section-header{padding:10px 16px;font-size:12px;font-weight:700;color:var(--text2);background:var(--bg2)}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-title">الإشعارات</div>
+  <div class="header-actions"><button onclick="markAllRead()" style="font-size:13px;color:var(--blue);font-weight:600">قراءة الكل</button></div>
+</div>
+<div class="page-content" id="notif-list"><div class="loader"><div class="spinner"></div></div></div>
+<nav class="nav-bottom">
+  <a href="feed.html"><i class="fa fa-home"></i></a>
+  <a href="explore.html"><i class="fa fa-search"></i></a>
+  <a href="create.html"><i class="fa fa-plus-square-o" style="font-size:30px"></i></a>
+  <a href="reels.html"><i class="fa fa-film"></i></a>
+  <a href="profile.html"><i class="fa fa-user-o"></i></a>
+</nav>
+<script src="js/db.js"></script>
+<script>
+let currentUser;
+async function init() {
+  await InstaMina.init();
+  currentUser = InstaMina.requireAuth();
+  if(!currentUser) return;
+  await loadNotifs();
+  await InstaMina.markNotificationsRead(currentUser.id);
+}
+async function loadNotifs() {
+  const notifs = await InstaMina.getNotifications(currentUser.id);
+  const list = document.getElementById('notif-list');
+  if(notifs.length===0) {
+    list.innerHTML='<div class="empty-state"><i class="fa fa-bell-o"></i><h3>لا توجد إشعارات</h3><p>ستظهر هنا إشعارات إعجاباتك وتعليقاتك ومتابعيك</p></div>';
+    return;
+  }
+  const today=[], earlier=[];
+  const oneDayAgo=Date.now()-86400000;
+  notifs.forEach(n=>{if(n.createdAt>oneDayAgo)today.push(n);else earlier.push(n);});
+  let html='';
+  if(today.length) {
+    html+='<div class="section-header">اليوم</div>';
+    html+=await buildNotifItems(today);
+  }
+  if(earlier.length) {
+    html+='<div class="section-header">السابق</div>';
+    html+=await buildNotifItems(earlier);
+  }
+  list.innerHTML=html;
+}
+async function buildNotifItems(notifs) {
+  let html='';
+  for(const n of notifs) {
+    const fromUser=await InstaMina.getUserById(n.fromId);
+    if(!fromUser) continue;
+    const icons={like:'fa-heart',comment:'fa-comment',follow:'fa-user-plus',message:'fa-paper-plane'};
+    const colors={like:'#ed4956',comment:'#0095f6',follow:'#58c322',message:'#f09433'};
+    const iconName=icons[n.type]||'fa-bell';
+    const color=colors[n.type]||'#8e8e8e';
+    const link=n.type==='follow'?`profile.html?userId=${n.fromId}`:n.postId?`post.html?id=${n.postId}`:`messages.html?userId=${n.fromId}`;
+    html+=`<div class="notif-item ${n.read?'':'unread'}" onclick="window.location.href='${link}'">
+      <div style="position:relative">
+        ${fromUser.avatar?`<img src="${fromUser.avatar}" class="avatar" style="width:44px;height:44px">`:`<div class="avatar-placeholder" style="width:44px;height:44px;font-size:16px">${fromUser.username[0].toUpperCase()}</div>`}
+        <div style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border:2px solid var(--bg)"><i class="fa ${iconName}"></i></div>
+      </div>
+      <div class="notif-text"><span>${fromUser.username}</span> ${n.text.replace(fromUser.username,'').trim()}<br><div class="notif-time">${InstaMina.timeAgo(n.createdAt)}</div></div>
+      ${n.type==='follow'?`<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();follow(${fromUser.id},this)">متابعة</button>`:''}
+    </div>`;
+  }
+  return html;
+}
+async function follow(userId,btn) {
+  const now=await InstaMina.toggleFollow(currentUser.id,userId);
+  btn.textContent=now?'يتابع':'متابعة';
+}
+async function markAllRead() {
+  await InstaMina.markNotificationsRead(currentUser.id);
+  document.querySelectorAll('.notif-item').forEach(el=>el.classList.remove('unread'));
+}
+init();
+</script>
+</body>
+</html>

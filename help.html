@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - مركز المساعدة</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.help-search{padding:12px;border-bottom:1px solid var(--border);position:sticky;top:44px;background:var(--bg);z-index:50}
+.help-search input{width:100%;background:var(--bg3);border:none;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;color:var(--text)}
+.faq-section{margin-bottom:8px}
+.faq-title{padding:10px 16px;font-size:13px;font-weight:700;color:var(--text2);background:var(--bg2)}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-question{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;font-weight:600;font-size:14px;transition:background .2s}
+.faq-question:hover{background:var(--bg2)}
+.faq-answer{padding:0 16px 14px;font-size:13px;line-height:1.7;color:var(--text2);display:none}
+.faq-answer.open{display:block}
+.faq-icon{transition:transform .3s;color:var(--text2)}
+.faq-icon.open{transform:rotate(45deg)}
+.contact-card{background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;margin:16px;padding:20px;color:#fff;text-align:center}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">مركز المساعدة</div>
+</div>
+<div class="page-content" style="padding-bottom:20px">
+  <div class="help-search">
+    <input type="search" placeholder="ابحث عن مساعدة..." oninput="filterFAQ(this.value)">
+  </div>
+  <div id="faq-container">
+    <div class="faq-section">
+      <div class="faq-title">الحساب والملف الشخصي</div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">كيف أغيّر صورتي الشخصية؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">اذهب إلى ملفك الشخصي ← تعديل الملف الشخصي ← انقر على صورتك الحالية ← اختر صورة جديدة من جهازك.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">كيف أغيّر كلمة المرور؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">اذهب إلى الإعدادات ← تغيير كلمة المرور ← أدخل كلمة المرور الحالية والجديدة.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">كيف أحصل على علامة التوثيق؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">اذهب إلى تعديل الملف الشخصي ← طلب التوثيق. سيتم مراجعة طلبك من قبل فريق الإدارة.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">كيف أحذف حسابي؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">اذهب إلى تعديل الملف الشخصي ← حذف الحساب. تنبيه: هذا الإجراء لا رجعة فيه.</div>
+      </div>
+    </div>
+    <div class="faq-section">
+      <div class="faq-title">المنشورات والمحتوى</div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">كيف أنشر صورة؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">انقر على أيقونة + في شريط التنقل السفلي ← اختر "منشور" ← اختر صورة من معرضك ← أضف تعليقاً ← انقر "نشر".</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">كيف تختفي القصص؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">تختفي القصص تلقائياً بعد 24 ساعة من نشرها. هذا يتم بشكل تلقائي دون الحاجة لأي إجراء منك.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">كيف أحفظ منشوراً؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">انقر على أيقونة الإشارة المرجعية (bookmark) في أسفل يمين المنشور. يمكنك رؤية المنشورات المحفوظة في ملفك الشخصي.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">كيف أحذف منشوراً؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">افتح المنشور ← انقر على النقاط الثلاث (⋯) ← اختر "حذف المنشور".</div>
+      </div>
+    </div>
+    <div class="faq-section">
+      <div class="faq-title">الخصوصية والأمان</div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">كيف أحظر مستخدماً؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">اذهب إلى ملف المستخدم ← انقر على النقاط الثلاث ← اختر "حظر". يمكنك إدارة القائمة المحظورة من الإعدادات.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">كيف أُبلغ عن محتوى مخالف؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">انقر على النقاط الثلاث على المنشور أو الملف الشخصي ← اختر "إبلاغ" ← اختر سبب الإبلاغ. سيتم مراجعته من الإدارة.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">أين تُخزَّن بياناتي؟<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">جميع بياناتك تُخزَّن محلياً على جهازك فقط في متصفحك. لا يتم إرسال بياناتك إلى أي خوادم خارجية.</div>
+      </div>
+    </div>
+    <div class="faq-section">
+      <div class="faq-title">المشكلات التقنية</div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">التطبيق لا يعمل بشكل صحيح<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">جرّب تحديث الصفحة (F5). إذا استمرت المشكلة، امسح ذاكرة المتصفح المؤقتة من الإعدادات ← مسح البيانات.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFAQ(this)">الصور لا تظهر<i class="fa fa-plus faq-icon"></i></div>
+        <div class="faq-answer">تأكد من أن حجم الصورة لا يتجاوز 10MB. الصور الكبيرة جداً قد تؤثر على الأداء. حاول اختيار صورة بحجم أصغر.</div>
+      </div>
+    </div>
+  </div>
+  <div class="contact-card">
+    <i class="fa fa-headset" style="font-size:32px;margin-bottom:12px"></i>
+    <div style="font-size:16px;font-weight:700;margin-bottom:8px">لم تجد ما تبحث عنه؟</div>
+    <div style="font-size:13px;opacity:.8;margin-bottom:16px">تواصل مع فريق الدعم مباشرة</div>
+    <button onclick="openTicket()" style="background:#fff;color:#667eea;border-radius:10px;padding:10px 24px;font-weight:700;font-size:14px;cursor:pointer;border:none">فتح تذكرة دعم</button>
+  </div>
+</div>
+<nav class="nav-bottom">
+  <a href="feed.html"><i class="fa fa-home"></i></a>
+  <a href="explore.html"><i class="fa fa-search"></i></a>
+  <a href="create.html"><i class="fa fa-plus-square-o" style="font-size:30px"></i></a>
+  <a href="reels.html"><i class="fa fa-film"></i></a>
+  <a href="profile.html"><i class="fa fa-user-o"></i></a>
+</nav>
+<script>
+function toggleFAQ(el) {
+  const answer=el.nextElementSibling;
+  const icon=el.querySelector('.faq-icon');
+  const isOpen=answer.classList.toggle('open');
+  icon.classList.toggle('open',isOpen);
+  icon.className=`fa fa-${isOpen?'minus':'plus'} faq-icon${isOpen?' open':''}`;
+}
+function filterFAQ(q) {
+  document.querySelectorAll('.faq-item').forEach(item=>{
+    const text=item.textContent.toLowerCase();
+    item.style.display=text.includes(q.toLowerCase())?'block':'none';
+  });
+}
+function openTicket(){alert('شكراً لتواصلك. سيتم الرد عليك قريباً من خلال الرسائل.');}
+</script>
+</body>
+</html>

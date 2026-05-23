@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إدارة المستخدمين</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+body{background:var(--bg2)}
+.admin-bar{background:linear-gradient(135deg,#0f3460,#16213e);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.admin-bar a{color:rgba(255,255,255,.7);font-size:20px}
+.admin-bar-title{color:#fff;font-weight:700;font-size:17px;flex:1}
+.user-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;margin:0 12px 12px;padding:16px}
+.user-card-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.user-card-info{flex:1}
+.user-card-name{font-weight:700;font-size:15px}
+.user-card-email{font-size:12px;color:var(--text2)}
+.user-card-stats{display:flex;gap:16px;font-size:12px;color:var(--text2);margin-bottom:12px}
+.user-card-actions{display:flex;gap:8px;flex-wrap:wrap}
+.badge{padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-blue{background:#e3f0fd;color:var(--blue)}
+.badge-green{background:#e6f9ed;color:#58c322}
+.badge-red{background:#fde8ea;color:var(--red)}
+.badge-gray{background:var(--bg3);color:var(--text2)}
+.search-bar{padding:10px 12px;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.filter-chips{display:flex;gap:8px;overflow-x:auto;padding:8px 12px;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg)}
+.chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg3);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.chip.active{background:var(--blue);color:#fff}
+</style>
+</head>
+<body>
+<div class="admin-bar">
+  <a href="admin-dashboard.html"><i class="fa fa-arrow-right"></i></a>
+  <div class="admin-bar-title">إدارة المستخدمين</div>
+  <span id="user-count" style="color:rgba(255,255,255,.7);font-size:13px">...</span>
+</div>
+<div class="search-bar">
+  <input type="search" class="form-input" id="search-input" placeholder="بحث بالاسم أو البريد..." oninput="filterUsers(this.value)">
+</div>
+<div class="filter-chips">
+  <div class="chip active" onclick="setFilter('all',this)">الكل</div>
+  <div class="chip" onclick="setFilter('verified',this)">موثق</div>
+  <div class="chip" onclick="setFilter('banned',this)">محظور</div>
+  <div class="chip" onclick="setFilter('admin',this)">أدمن</div>
+</div>
+<div style="padding:12px 0" id="users-list"></div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let allUsers=[], currentFilter='all';
+async function init() {
+  if(sessionStorage.getItem('instamina_admin')!=='true'){window.location.href='admin-login.html';return;}
+  await InstaMina.init();
+  allUsers=await InstaMina.getAllUsers();
+  renderUsers(allUsers);
+}
+function renderUsers(users) {
+  document.getElementById('user-count').textContent=users.length+' مستخدم';
+  const list=document.getElementById('users-list');
+  if(users.length===0){list.innerHTML='<div class="empty-state"><i class="fa fa-users"></i><h3>لا توجد نتائج</h3></div>';return;}
+  list.innerHTML='';
+  for(const u of users) {
+    const card=document.createElement('div'); card.className='user-card';
+    card.innerHTML=`
+      <div class="user-card-header">
+        ${u.avatar?`<img src="${u.avatar}" class="avatar" style="width:48px;height:48px">`:`<div class="avatar-placeholder" style="width:48px;height:48px;font-size:17px">${u.username[0].toUpperCase()}</div>`}
+        <div class="user-card-info">
+          <div class="user-card-name">${u.fullName||u.username} <span class="badge ${u.isBanned?'badge-red':u.isVerified?'badge-blue':u.isAdmin?'badge-green':'badge-gray'}">${u.isBanned?'محظور':u.isVerified?'موثق':u.isAdmin?'أدمن':'عادي'}</span></div>
+          <div class="user-card-email">@${u.username} · ${u.email}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text2)">#${u.id}</div>
+      </div>
+      <div class="user-card-stats">
+        <span><i class="fa fa-image"></i> ${u.postsCount||0} منشور</span>
+        <span><i class="fa fa-users"></i> ${u.followersCount||0} متابع</span>
+        <span><i class="fa fa-calendar"></i> ${new Date(u.createdAt).toLocaleDateString('ar')}</span>
+      </div>
+      <div class="user-card-actions">
+        <button class="btn btn-sm ${u.isVerified?'btn-secondary':'btn-primary'}" onclick="toggleVerify(${u.id},this)">${u.isVerified?'إزالة التوثيق':'توثيق'}</button>
+        <button class="btn btn-sm ${u.isBanned?'btn-secondary':'btn-danger'}" onclick="toggleBan(${u.id},this)">${u.isBanned?'فك الحظر':'حظر'}</button>
+        <button class="btn btn-sm btn-secondary" onclick="makeAdmin(${u.id})"><i class="fa fa-shield"></i> أدمن</button>
+        <button class="btn btn-sm" style="background:#fde8ea;color:var(--red)" onclick="deleteUser(${u.id})"><i class="fa fa-trash"></i> حذف</button>
+      </div>`;
+    list.appendChild(card);
+  }
+}
+function filterUsers(q) {
+  let filtered=allUsers;
+  if(currentFilter!=='all') filtered=filtered.filter(u=>currentFilter==='verified'?u.isVerified:currentFilter==='banned'?u.isBanned:u.isAdmin);
+  if(q) filtered=filtered.filter(u=>(u.username+' '+u.email+' '+(u.fullName||'')).toLowerCase().includes(q.toLowerCase()));
+  renderUsers(filtered);
+}
+function setFilter(f,el) {
+  currentFilter=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  filterUsers(document.getElementById('search-input').value);
+}
+async function toggleVerify(id,btn) {
+  const u=await InstaMina.getUserById(id);
+  const now=!u.isVerified;
+  await InstaMina.updateUser(id,{isVerified:now});
+  btn.textContent=now?'إزالة التوثيق':'توثيق';
+  btn.className=`btn btn-sm ${now?'btn-secondary':'btn-primary'}`;
+  showToast(now?'تم التوثيق ✓':'تم إزالة التوثيق');
+}
+async function toggleBan(id,btn) {
+  const u=await InstaMina.getUserById(id);
+  const now=!u.isBanned;
+  await InstaMina.updateUser(id,{isBanned:now});
+  btn.textContent=now?'فك الحظر':'حظر';
+  btn.className=`btn btn-sm ${now?'btn-secondary':'btn-danger'}`;
+  showToast(now?'تم الحظر':'تم فك الحظر');
+}
+async function makeAdmin(id) {
+  if(!confirm('منح صلاحيات الأدمن؟')) return;
+  await InstaMina.updateUser(id,{isAdmin:true});
+  showToast('تم منح صلاحيات الأدمن ✓');
+}
+async function deleteUser(id) {
+  if(!confirm('هل تريد حذف هذا المستخدم نهائياً؟')) return;
+  await InstaMina.deleteUser(id);
+  allUsers=allUsers.filter(u=>u.id!==id);
+  renderUsers(allUsers);
+  showToast('تم الحذف');
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

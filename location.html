@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - الموقع</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.location-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+.location-item:hover{background:var(--bg2)}
+.location-icon{width:40px;height:40px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.location-name{font-weight:600;font-size:14px}
+.location-desc{font-size:12px;color:var(--text2)}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">إضافة موقع</div>
+</div>
+<div class="page-content" style="padding-bottom:20px">
+  <div style="padding:8px 12px;border-bottom:1px solid var(--border);position:sticky;top:44px;background:var(--bg)">
+    <div style="position:relative">
+      <i class="fa fa-search" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text2)"></i>
+      <input type="search" class="form-input" id="loc-search" placeholder="ابحث عن موقع..." style="padding-right:38px" oninput="filterLocations(this.value)">
+    </div>
+  </div>
+  <div class="location-item" onclick="selectLocation('موقعي الحالي')">
+    <div class="location-icon" style="background:#e3f0fd"><i class="fa fa-map-marker" style="color:var(--blue)"></i></div>
+    <div><div class="location-name">موقعي الحالي</div><div class="location-desc">استخدام GPS</div></div>
+  </div>
+  <div class="location-item" onclick="selectLocation('')">
+    <div class="location-icon"><i class="fa fa-times" style="color:var(--text2)"></i></div>
+    <div><div class="location-name">بدون موقع</div></div>
+  </div>
+  <div style="padding:8px 16px;font-size:12px;font-weight:700;color:var(--text2)">الأماكن الشائعة</div>
+  <div id="locations-list"></div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+<script>
+const LOCATIONS=[
+  {name:'الرياض، المملكة العربية السعودية',icon:'🏙️'},
+  {name:'جدة، المملكة العربية السعودية',icon:'🏖️'},
+  {name:'مكة المكرمة',icon:'🕋'},
+  {name:'المدينة المنورة',icon:'🕌'},
+  {name:'دبي، الإمارات العربية المتحدة',icon:'🌆'},
+  {name:'القاهرة، مصر',icon:'🏛️'},
+  {name:'بيروت، لبنان',icon:'🌊'},
+  {name:'عمّان، الأردن',icon:'🏔️'},
+  {name:'بغداد، العراق',icon:'🌴'},
+  {name:'المنامة، البحرين',icon:'🌉'},
+  {name:'الدوحة، قطر',icon:'⛵'},
+  {name:'أبوظبي، الإمارات',icon:'🏗️'},
+  {name:'مسقط، عُمان',icon:'🏝️'},
+  {name:'الكويت العاصمة',icon:'🌅'},
+  {name:'تونس العاصمة',icon:'🌿'},
+  {name:'الدار البيضاء، المغرب',icon:'🌺'},
+  {name:'إسطنبول، تركيا',icon:'🕌'},
+  {name:'لندن، المملكة المتحدة',icon:'🎡'},
+  {name:'باريس، فرنسا',icon:'🗼'},
+  {name:'نيويورك، الولايات المتحدة',icon:'🗽'},
+];
+function init(){renderLocations(LOCATIONS);}
+function renderLocations(locs){
+  const list=document.getElementById('locations-list');
+  list.innerHTML=locs.map(l=>`<div class="location-item" onclick="selectLocation('${l.name}')">
+    <div class="location-icon">${l.icon}</div>
+    <div><div class="location-name">${l.name}</div></div>
+  </div>`).join('');
+}
+function filterLocations(q){if(!q){renderLocations(LOCATIONS);return;}renderLocations(LOCATIONS.filter(l=>l.name.toLowerCase().includes(q.toLowerCase())));}
+function selectLocation(name){sessionStorage.setItem('post_location',name);showToast(name?'تم اختيار الموقع ✓':'تم إزالة الموقع');setTimeout(()=>window.location.href='upload-post.html',700);}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

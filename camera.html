@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - الكاميرا</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+body{background:#000;overflow:hidden}
+.camera-wrap{position:fixed;inset:0;background:#000;display:flex;flex-direction:column}
+#video{width:100%;height:100%;object-fit:cover;position:absolute}
+.camera-top{position:absolute;top:0;left:0;right:0;padding:16px;display:flex;align-items:center;justify-content:space-between;z-index:10;padding-top:calc(16px + env(safe-area-inset-top))}
+.camera-top button{color:#fff;font-size:22px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:50%}
+.camera-bottom{position:absolute;bottom:0;left:0;right:0;padding:24px;padding-bottom:calc(24px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-around;z-index:10}
+.capture-btn{width:72px;height:72px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.5);cursor:pointer;transition:transform .1s;display:flex;align-items:center;justify-content:center}
+.capture-btn:active{transform:scale(.92)}
+.capture-btn.recording{background:#ed4956;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(237,73,86,.4)}50%{box-shadow:0 0 0 10px rgba(237,73,86,0)}}
+.gallery-thumb{width:52px;height:52px;border-radius:10px;overflow:hidden;background:var(--bg3);cursor:pointer}
+.gallery-thumb img{width:100%;height:100%;object-fit:cover}
+.mode-tabs{position:absolute;bottom:100px;left:0;right:0;display:flex;justify-content:center;gap:20px;z-index:10}
+.mode-tab{color:rgba(255,255,255,.7);font-size:13px;font-weight:700;cursor:pointer;padding:4px 8px;transition:color .2s}
+.mode-tab.active{color:#fff;border-bottom:2px solid #fff}
+.camera-preview{position:fixed;inset:0;background:#000;z-index:200;display:none;flex-direction:column}
+.camera-preview img{flex:1;object-fit:contain;width:100%}
+.camera-preview-actions{display:flex;gap:12px;padding:16px;background:rgba(0,0,0,.8)}
+.no-camera{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:#fff;gap:16px;padding:40px;text-align:center}
+</style>
+</head>
+<body>
+<div class="camera-wrap">
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="canvas" style="display:none"></canvas>
+  <div class="camera-top">
+    <button onclick="window.location.href='create.html'"><i class="fa fa-times"></i></button>
+    <button onclick="toggleFlash()" id="flash-btn"><i class="fa fa-bolt"></i></button>
+    <button onclick="flipCamera()"><i class="fa fa-refresh"></i></button>
+  </div>
+  <div class="mode-tabs">
+    <div class="mode-tab" onclick="setMode('video',this)">فيديو</div>
+    <div class="mode-tab active" onclick="setMode('photo',this)">صورة</div>
+    <div class="mode-tab" onclick="setMode('story',this)">قصة</div>
+  </div>
+  <div class="camera-bottom">
+    <div class="gallery-thumb" onclick="openGallery()">
+      <i class="fa fa-image" style="color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;height:100%"></i>
+    </div>
+    <div class="capture-btn" id="capture-btn" onclick="capture()"></div>
+    <div style="width:52px"></div>
+  </div>
+</div>
+<div class="camera-preview" id="camera-preview">
+  <img id="preview-result" src="">
+  <div class="camera-preview-actions">
+    <button onclick="discardPhoto()" class="btn btn-secondary" style="flex:1;color:#fff;background:rgba(255,255,255,.15)"><i class="fa fa-trash"></i> تجاهل</button>
+    <button onclick="usePhoto()" class="btn btn-primary" style="flex:1"><i class="fa fa-check"></i> استخدام</button>
+  </div>
+</div>
+<input type="file" id="gallery-input" accept="image/*,video/*" style="display:none" onchange="loadFromGallery(this)">
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let stream=null, mode='photo', facingMode='user', capturedData=null;
+async function init() {
+  await InstaMina.init();
+  InstaMina.requireAuth();
+  startCamera();
+}
+async function startCamera() {
+  try {
+    if(stream) stream.getTracks().forEach(t=>t.stop());
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode},audio:mode==='video'});
+    document.getElementById('video').srcObject=stream;
+  } catch(e) {
+    document.querySelector('.camera-wrap').innerHTML=`<div class="no-camera"><i class="fa fa-camera" style="font-size:64px;opacity:.4"></i><h3>لا يمكن الوصول للكاميرا</h3><p style="opacity:.7">اسمح بالوصول للكاميرا أو اختر صورة من المعرض</p><button class="btn btn-primary" onclick="document.getElementById('gallery-input').click()"><i class="fa fa-image"></i> اختيار من المعرض</button><a href="create.html" class="btn btn-secondary">العودة</a></div>`;
+  }
+}
+function capture() {
+  if(mode==='video') {toggleRecord();return;}
+  const video=document.getElementById('video');
+  const canvas=document.getElementById('canvas');
+  canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+  canvas.getContext('2d').drawImage(video,0,0);
+  capturedData=canvas.toDataURL('image/jpeg',0.92);
+  document.getElementById('preview-result').src=capturedData;
+  document.getElementById('camera-preview').style.display='flex';
+}
+function flipCamera(){facingMode=facingMode==='user'?'environment':'user';startCamera();}
+function toggleFlash(){showToast('الفلاش غير مدعوم في المتصفح');}
+function setMode(m,el){mode=m;document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+function openGallery(){document.getElementById('gallery-input').click();}
+function loadFromGallery(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{capturedData=e.target.result;document.getElementById('preview-result').src=capturedData;document.getElementById('camera-preview').style.display='flex';};reader.readAsDataURL(file);}
+function discardPhoto(){document.getElementById('camera-preview').style.display='none';capturedData=null;}
+function usePhoto(){if(!capturedData)return;sessionStorage.setItem('upload_image',capturedData);window.location.href='upload-post.html';}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+window.addEventListener('beforeunload',()=>{if(stream)stream.getTracks().forEach(t=>t.stop());});
+</script>
+</body>
+</html>

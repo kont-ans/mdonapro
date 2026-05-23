@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="description" content="إنستا-مينا - شبكة التواصل الاجتماعي">
+<meta property="og:title" content="إنستا-مينا">
+<meta property="og:description" content="شارك لحظاتك مع العالم">
+<title>إنستا-مينا</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+  .auth-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: var(--bg); }
+  .auth-box { width: 100%; max-width: 380px; }
+  .logo-area { text-align: center; margin-bottom: 32px; }
+  .logo-text { font-size: 42px; font-weight: 700; letter-spacing: -2px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Segoe UI', cursive; }
+  .logo-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .auth-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .auth-tab { flex: 1; padding: 12px; text-align: center; font-weight: 600; font-size: 14px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; }
+  .auth-tab.active { color: var(--text); border-bottom-color: var(--text); }
+  .auth-form { display: none; }
+  .auth-form.active { display: block; }
+  .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--text2); font-size: 13px; font-weight: 600; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .or-continue { text-align: center; font-size: 13px; color: var(--text2); margin-top: 16px; }
+  .or-continue a { color: var(--blue); font-weight: 600; }
+  .avatar-upload { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 16px; cursor: pointer; }
+  .avatar-preview { width: 80px; height: 80px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed var(--border); }
+  .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-preview i { font-size: 28px; color: var(--text2); }
+  .avatar-label { font-size: 13px; color: var(--blue); font-weight: 600; }
+  .pwd-wrap { position: relative; }
+  .pwd-toggle { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text2); cursor: pointer; }
+  .error-msg { color: var(--red); font-size: 13px; margin-top: 4px; display: none; }
+</style>
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-box">
+    <div class="logo-area">
+      <div class="logo-text">Insta Mina</div>
+      <div class="logo-sub">شارك لحظاتك مع العالم ✨</div>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">تسجيل الدخول</div>
+      <div class="auth-tab" onclick="switchTab('register')">إنشاء حساب</div>
+    </div>
+
+    <!-- Login Form -->
+    <div class="auth-form active" id="login-form">
+      <div class="form-group">
+        <input type="text" class="form-input" id="login-username" placeholder="اسم المستخدم أو البريد الإلكتروني" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <div class="pwd-wrap">
+          <input type="password" class="form-input" id="login-password" placeholder="كلمة المرور" autocomplete="current-password">
+          <span class="pwd-toggle" onclick="togglePwd('login-password',this)"><i class="fa fa-eye"></i></span>
+        </div>
+      </div>
+      <div class="error-msg" id="login-error">اسم المستخدم أو كلمة المرور غير صحيحة</div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()" style="margin-top:8px">تسجيل الدخول</button>
+      <div class="divider">أو</div>
+      <div class="or-continue">ليس لديك حساب؟ <a href="#" onclick="switchTab('register');return false">إنشاء حساب جديد</a></div>
+      <div style="text-align:center;margin-top:24px"><a href="admin-login.html" style="font-size:12px;color:var(--text2)">لوحة تحكم الأدمن</a></div>
+    </div>
+
+    <!-- Register Form -->
+    <div class="auth-form" id="register-form">
+      <div class="avatar-upload" onclick="document.getElementById('av-input').click()">
+        <div class="avatar-preview" id="av-preview"><i class="fa fa-camera"></i></div>
+        <div class="avatar-label"><i class="fa fa-plus-circle"></i> إضافة صورة شخصية</div>
+        <input type="file" id="av-input" accept="image/*" style="display:none" onchange="previewAvatar(this)">
+      </div>
+      <div class="form-group">
+        <input type="text" class="form-input" id="reg-fullname" placeholder="الاسم الكامل">
+      </div>
+      <div class="form-group">
+        <input type="text" class="form-input" id="reg-username" placeholder="اسم المستخدم (بالإنجليزية)" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <input type="email" class="form-input" id="reg-email" placeholder="البريد الإلكتروني">
+      </div>
+      <div class="form-group">
+        <div class="pwd-wrap">
+          <input type="password" class="form-input" id="reg-password" placeholder="كلمة المرور (6 أحرف على الأقل)" autocomplete="new-password">
+          <span class="pwd-toggle" onclick="togglePwd('reg-password',this)"><i class="fa fa-eye"></i></span>
+        </div>
+      </div>
+      <div class="error-msg" id="reg-error"></div>
+      <button class="btn btn-primary btn-full" onclick="doRegister()" style="margin-top:8px">إنشاء الحساب</button>
+      <p style="font-size:11px;color:var(--text2);text-align:center;margin-top:12px">بالتسجيل أنت توافق على <a href="terms.html" style="color:var(--blue)">شروط الاستخدام</a> و<a href="privacy-policy.html" style="color:var(--blue)">سياسة الخصوصية</a></p>
+    </div>
+  </div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let avatarData = null;
+
+async function init() {
+  await InstaMina.init();
+  await InstaMina.seedDemo();
+  const u = InstaMina.getCurrentUser();
+  if (u) { window.location.href = 'feed.html'; return; }
+  const maintenance = await InstaMina.getSetting('maintenance');
+  if (maintenance === 'true') {
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:20px;text-align:center"><i class="fa fa-tools" style="font-size:64px;color:var(--text2)"></i><h2>المنصة في وضع الصيانة</h2><p style="color:var(--text2)">نعمل على تحسين المنصة. نعود قريباً!</p></div>';
+    return;
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.querySelectorAll('.auth-form').forEach((f,i) => f.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+}
+
+function togglePwd(id, el) {
+  const inp = document.getElementById(id);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  el.innerHTML = show ? '<i class="fa fa-eye-slash"></i>' : '<i class="fa fa-eye"></i>';
+}
+
+function previewAvatar(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    avatarData = e.target.result;
+    const prev = document.getElementById('av-preview');
+    prev.innerHTML = `<img src="${avatarData}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function doLogin() {
+  const identifier = document.getElementById('login-username').value.trim();
+  const pwd = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!identifier || !pwd) { errEl.textContent = 'يرجى ملء جميع الحقول'; errEl.style.display = 'block'; return; }
+  let user = await InstaMina.getUserByUsername(identifier) || await InstaMina.getUserByEmail(identifier);
+  if (!user || user.password !== pwd) { errEl.style.display = 'block'; return; }
+  if (user.isBanned) { errEl.textContent = 'حسابك محظور. تواصل مع الدعم.'; errEl.style.display = 'block'; return; }
+  InstaMina.setCurrentUser(user);
+  showToast('مرحباً ' + (user.fullName || user.username) + '! 👋');
+  setTimeout(() => window.location.href = 'feed.html', 800);
+}
+
+async function doRegister() {
+  const fullName = document.getElementById('reg-fullname').value.trim();
+  const username = document.getElementById('reg-username').value.trim().toLowerCase();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pwd = document.getElementById('reg-password').value;
+  const errEl = document.getElementById('reg-error');
+  errEl.style.display = 'none';
+  if (!fullName || !username || !email || !pwd) { errEl.textContent = 'يرجى ملء جميع الحقول'; errEl.style.display = 'block'; return; }
+  if (!/^[a-z0-9_.]{3,20}$/.test(username)) { errEl.textContent = 'اسم المستخدم: 3-20 حرف إنجليزي أو أرقام أو . _'; errEl.style.display = 'block'; return; }
+  if (pwd.length < 6) { errEl.textContent = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'; errEl.style.display = 'block'; return; }
+  const existing = await InstaMina.getUserByUsername(username);
+  if (existing) { errEl.textContent = 'اسم المستخدم مستخدم مسبقاً'; errEl.style.display = 'block'; return; }
+  const existingEmail = await InstaMina.getUserByEmail(email);
+  if (existingEmail) { errEl.textContent = 'البريد الإلكتروني مسجل مسبقاً'; errEl.style.display = 'block'; return; }
+  try {
+    const user = await InstaMina.createUser({ fullName, username, email, password: pwd, avatar: avatarData });
+    InstaMina.setCurrentUser(user);
+    showToast('تم إنشاء حسابك بنجاح! 🎉');
+    setTimeout(() => window.location.href = 'feed.html', 800);
+  } catch(e) { errEl.textContent = 'حدث خطأ. حاول مرة أخرى.'; errEl.style.display = 'block'; }
+}
+
+function showToast(msg) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') { if (document.getElementById('login-form').classList.contains('active')) doLogin(); else doRegister(); } });
+init();
+</script>
+</body>
+</html>

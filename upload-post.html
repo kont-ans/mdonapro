@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - منشور جديد</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.upload-area{border:2px dashed var(--border);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--bg2);margin:16px}
+.upload-area:hover{border-color:var(--blue)}
+.upload-area i{font-size:48px;color:var(--text2);margin-bottom:12px}
+.preview-img{width:100%;max-height:400px;object-fit:cover;border-radius:12px;margin:16px;width:calc(100%-32px)}
+.steps{display:flex;padding:0 16px 12px;gap:8px}
+.step{flex:1;height:3px;border-radius:2px;background:var(--border)}
+.step.active{background:var(--blue)}
+.caption-area{padding:0 16px}
+.caption-input{width:100%;border:none;background:transparent;font-size:15px;color:var(--text);outline:none;resize:none;min-height:100px}
+.post-options{border-top:1px solid var(--border)}
+.option-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">منشور جديد</div>
+  <button onclick="publish()" style="color:var(--blue);font-weight:700;font-size:15px;margin-left:8px">نشر</button>
+</div>
+<div class="page-content" style="padding-bottom:20px">
+  <div id="upload-section">
+    <div class="upload-area" id="upload-area" onclick="document.getElementById('img-input').click()">
+      <i class="fa fa-image"></i>
+      <h3 style="font-size:18px;margin-bottom:8px">اختر صورة أو فيديو</h3>
+      <p style="color:var(--text2);font-size:14px">أو اسحب وأفلت هنا</p>
+      <input type="file" id="img-input" accept="image/*,video/*" style="display:none" onchange="previewMedia(this)">
+    </div>
+  </div>
+  <div id="preview-section" style="display:none">
+    <img id="preview-img" style="width:100%;max-height:400px;object-fit:cover">
+    <div class="caption-area">
+      <div style="display:flex;gap:12px;padding-top:12px;border-bottom:1px solid var(--border);padding-bottom:12px">
+        <div id="my-avatar"></div>
+        <textarea class="caption-input" id="caption-input" placeholder="أضف تعليقاً..." maxlength="2200"></textarea>
+        <span style="font-size:12px;color:var(--text2);align-self:flex-end;white-space:nowrap" id="char-count">0/2200</span>
+      </div>
+    </div>
+    <div class="post-options">
+      <div class="option-row" onclick="window.location.href='location.html'">
+        <span>إضافة موقع</span>
+        <span id="location-val" style="color:var(--text2);font-size:13px">—</span>
+        <i class="fa fa-map-marker" style="color:var(--text2)"></i>
+      </div>
+      <div class="option-row" onclick="window.location.href='tag-people.html'">
+        <span>الإشارة لأشخاص</span>
+        <i class="fa fa-at" style="color:var(--text2)"></i>
+      </div>
+      <div class="option-row" onclick="window.location.href='filters.html'">
+        <span>تطبيق فلتر</span>
+        <i class="fa fa-magic" style="color:var(--text2)"></i>
+      </div>
+      <div class="option-row">
+        <span>إخفاء عدد الإعجابات</span>
+        <div class="toggle" id="hide-likes-toggle" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="option-row">
+        <span>تعطيل التعليقات</span>
+        <div class="toggle" id="disable-comments-toggle" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+    <div style="padding:16px">
+      <button class="btn btn-secondary btn-full" onclick="resetUpload()"><i class="fa fa-refresh"></i> اختيار صورة أخرى</button>
+    </div>
+  </div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let currentUser, mediaData=null, mediaType='image';
+async function init() {
+  await InstaMina.init();
+  currentUser = InstaMina.requireAuth();
+  if(!currentUser) return;
+  const myAv=document.getElementById('my-avatar');
+  myAv.innerHTML=currentUser.avatar?`<img src="${currentUser.avatar}" class="avatar" style="width:36px;height:36px">`:`<div class="avatar-placeholder" style="width:36px;height:36px;font-size:14px">${currentUser.username[0].toUpperCase()}</div>`;
+  const saved=sessionStorage.getItem('upload_image');
+  if(saved){mediaData=saved;showPreview(saved,'image');}
+  const loc=sessionStorage.getItem('post_location');
+  if(loc) document.getElementById('location-val').textContent=loc;
+  document.getElementById('caption-input').oninput=function(){document.getElementById('char-count').textContent=this.value.length+'/2200';};
+  const area=document.getElementById('upload-area');
+  area.ondragover=e=>{e.preventDefault();area.style.borderColor='var(--blue)';};
+  area.ondragleave=()=>area.style.borderColor='var(--border)';
+  area.ondrop=e=>{e.preventDefault();const file=e.dataTransfer.files[0];if(file)handleFile(file);};
+}
+function previewMedia(input) {
+  const file=input.files[0]; if(!file) return;
+  handleFile(file);
+}
+function handleFile(file) {
+  const reader=new FileReader();
+  reader.onload=e=>{
+    mediaData=e.target.result;
+    mediaType=file.type.startsWith('video')?'video':'image';
+    showPreview(e.target.result,mediaType);
+  };
+  reader.readAsDataURL(file);
+}
+function showPreview(src,type) {
+  document.getElementById('upload-section').style.display='none';
+  document.getElementById('preview-section').style.display='block';
+  const img=document.getElementById('preview-img');
+  if(type==='video'){img.style.display='none';const v=document.createElement('video');v.src=src;v.controls=true;v.style='width:100%;max-height:400px;object-fit:cover';img.parentNode.insertBefore(v,img);}
+  else{img.src=src;img.style.display='block';}
+}
+function resetUpload() {
+  mediaData=null;
+  document.getElementById('upload-section').style.display='block';
+  document.getElementById('preview-section').style.display='none';
+  document.getElementById('caption-input').value='';
+  sessionStorage.removeItem('upload_image');
+}
+async function publish() {
+  if(!mediaData) {showToast('يرجى اختيار صورة أو فيديو');return;}
+  const caption=document.getElementById('caption-input').value.trim();
+  const location=sessionStorage.getItem('post_location')||'';
+  showToast('جارٍ النشر...');
+  const postData={userId:currentUser.id,caption,location,type:'post'};
+  if(mediaType==='video') postData.video=mediaData;
+  else postData.image=mediaData;
+  await InstaMina.createPost(postData);
+  const updated=await InstaMina.updateUser(currentUser.id,{postsCount:(currentUser.postsCount||0)+1});
+  InstaMina.setCurrentUser(updated);
+  sessionStorage.removeItem('upload_image');
+  sessionStorage.removeItem('post_location');
+  showToast('تم النشر بنجاح! 🎉');
+  setTimeout(()=>window.location.href='profile.html',1200);
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

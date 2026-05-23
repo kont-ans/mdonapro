@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - طلب التوثيق</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.verify-hero{background:linear-gradient(135deg,#0095f6,#0074cc);padding:32px 20px;text-align:center;color:#fff}
+.verify-badge{font-size:56px;margin-bottom:8px}
+.verify-hero h2{font-size:22px;font-weight:700;margin-bottom:6px}
+.verify-hero p{font-size:14px;opacity:.9}
+.requirement-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.req-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.req-text{flex:1;font-size:14px}
+.req-text span{font-weight:700}
+.form-section{padding:16px}
+.file-upload{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;margin-bottom:12px;transition:border-color .2s}
+.file-upload:hover{border-color:var(--blue)}
+.verified-state{padding:32px;text-align:center}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">طلب التوثيق</div>
+</div>
+<div class="page-content" style="padding-bottom:20px" id="content"></div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let currentUser;
+async function init() {
+  await InstaMina.init();
+  currentUser=InstaMina.requireAuth();
+  if(!currentUser) return;
+  const content=document.getElementById('content');
+  if(currentUser.isVerified){
+    content.innerHTML=`<div class="verified-state">
+      <div style="font-size:72px;margin-bottom:16px">✅</div>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:8px">حسابك موثق بالفعل</h2>
+      <p style="color:var(--text2);margin-bottom:24px">تظهر علامة التوثيق الزرقاء <i class="fa fa-check-circle" style="color:var(--blue)"></i> بجانب اسمك</p>
+      <a href="profile.html" class="btn btn-primary">العودة للملف الشخصي</a>
+    </div>`;
+    return;
+  }
+  content.innerHTML=`
+    <div class="verify-hero">
+      <div class="verify-badge">☑️</div>
+      <h2>طلب التوثيق</h2>
+      <p>احصل على علامة التوثيق الزرقاء وأثبت هويتك على إنستا-مينا</p>
+    </div>
+    <div style="padding:16px;font-size:14px;font-weight:700;border-bottom:1px solid var(--border)">متطلبات التوثيق</div>
+    <div class="requirement-item"><div class="req-icon" style="background:#e6f9ed"><i class="fa fa-user-circle" style="color:#58c322"></i></div><div class="req-text"><span>ملف شخصي مكتمل</span><br>صورة شخصية، اسم، نبذة تعريفية</div><i class="fa fa-check" style="color:#58c322"></i></div>
+    <div class="requirement-item"><div class="req-icon" style="background:#e3f0fd"><i class="fa fa-image" style="color:var(--blue)"></i></div><div class="req-text"><span>محتوى أصيل</span><br>منشورات حقيقية وأصيلة</div><i class="fa fa-check" style="color:#58c322"></i></div>
+    <div class="requirement-item"><div class="req-icon" style="background:#fff8e1"><i class="fa fa-users" style="color:#f09433"></i></div><div class="req-text"><span>قاعدة متابعين</span><br>10 متابعين على الأقل</div><i class="fa fa-${(currentUser.followersCount||0)>=10?'check" style="color:#58c322':'times" style="color:var(--red)'}"></i></div>
+    <div style="padding:16px;font-size:14px;font-weight:700;border-top:8px solid var(--bg2);border-bottom:1px solid var(--border);margin-top:8px">تقديم طلب التوثيق</div>
+    <div class="form-section">
+      <div class="form-group">
+        <label class="form-label">سبب طلب التوثيق</label>
+        <select class="form-input" id="v-reason">
+          <option value="">اختر السبب</option>
+          <option>شخصية عامة / مؤثر</option>
+          <option>علامة تجارية</option>
+          <option>فنان / صانع محتوى</option>
+          <option>صحفي / إعلامي</option>
+          <option>رياضي</option>
+          <option>أخرى</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">وصف مختصر (لماذا تستحق التوثيق؟)</label>
+        <textarea class="form-input" id="v-desc" rows="4" placeholder="اشرح بإيجاز لماذا تستحق التوثيق..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">رابط لإثبات الهوية (اختياري)</label>
+        <input type="url" class="form-input" id="v-link" placeholder="رابط موقع أو صفحة رسمية">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="submitVerify()" style="margin-top:8px"><i class="fa fa-paper-plane"></i> إرسال الطلب</button>
+      <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:12px">سيتم مراجعة طلبك خلال 7-14 يوم عمل</p>
+    </div>`;
+}
+async function submitVerify() {
+  const reason=document.getElementById('v-reason').value;
+  const desc=document.getElementById('v-desc').value.trim();
+  if(!reason||!desc){showToast('يرجى ملء جميع الحقول');return;}
+  await InstaMina.addReport({type:'verify_request',targetId:currentUser.id,reporterId:currentUser.id,reason:`طلب توثيق: ${reason}. ${desc}`});
+  showToast('تم إرسال طلبك بنجاح! سنتواصل معك قريباً ✓');
+  setTimeout(()=>window.location.href='profile.html',2000);
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - النشاط</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.activity-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.activity-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.activity-text{flex:1;font-size:14px;line-height:1.4}
+.activity-time{font-size:11px;color:var(--text2)}
+.section-title{padding:10px 16px;font-size:12px;font-weight:700;color:var(--text2);background:var(--bg2)}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">سجل النشاط</div>
+</div>
+<div class="page-content" id="activity-list"><div class="loader"><div class="spinner"></div></div></div>
+<script src="js/db.js"></script>
+<script>
+async function init() {
+  await InstaMina.init();
+  const currentUser=InstaMina.requireAuth();
+  if(!currentUser) return;
+  const [posts,likes,comments,follows]=await Promise.all([
+    InstaMina.getPostsByUser(currentUser.id),
+    new Promise(r=>{const tx=db.transaction('likes','readonly');const idx=tx.objectStore('likes').index('userId');const req=idx.getAll(Number(currentUser.id));req.onsuccess=()=>r(req.result||[]);}),
+    new Promise(r=>{const tx=db.transaction('comments','readonly');const req=tx.objectStore('comments').getAll();req.onsuccess=()=>r((req.result||[]).filter(c=>c.userId===currentUser.id));}),
+    InstaMina.getFollowing(currentUser.id)
+  ]);
+  const activities=[
+    ...posts.map(p=>({type:'post',text:`نشرت منشوراً جديداً`,time:p.createdAt,icon:'fa-image',color:'#667eea'})),
+    ...likes.map(l=>({type:'like',text:`أعجبك منشور`,time:l.createdAt,icon:'fa-heart',color:'#ed4956'})),
+    ...comments.map(c=>({type:'comment',text:`علقت: ${c.text.slice(0,40)}`,time:c.createdAt,icon:'fa-comment',color:'#0095f6'})),
+    ...follows.map(f=>({type:'follow',text:`بدأت متابعة مستخدم`,time:f.createdAt,icon:'fa-user-plus',color:'#58c322'})),
+  ].sort((a,b)=>b.time-a.time);
+  const list=document.getElementById('activity-list');
+  if(activities.length===0){list.innerHTML='<div class="empty-state"><i class="fa fa-history"></i><h3>لا سجل نشاط بعد</h3></div>';return;}
+  list.innerHTML='<div class="section-title">النشاط الأخير</div>';
+  for(const a of activities) {
+    const item=document.createElement('div');item.className='activity-item';
+    item.innerHTML=`<div class="activity-icon" style="background:${a.color}22"><i class="fa ${a.icon}" style="color:${a.color}"></i></div>
+    <div class="activity-text">${a.text}<br><span class="activity-time">${InstaMina.timeAgo(a.time)}</span></div>`;
+    list.appendChild(item);
+  }
+}
+init();
+</script>
+</body>
+</html>

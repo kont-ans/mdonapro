@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - الرئيسية</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.stories-bar { display:flex; gap:12px; padding:12px 16px; overflow-x:auto; scrollbar-width:none; border-bottom:1px solid var(--border); }
+.stories-bar::-webkit-scrollbar { display:none; }
+.story-item { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; cursor:pointer; }
+.story-item .name { font-size:11px; color:var(--text); max-width:60px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; }
+.add-story { width:60px; height:60px; border-radius:50%; background:var(--bg3); display:flex; align-items:center; justify-content:center; border:2px dashed var(--border); }
+.post-card { background:var(--bg); margin-bottom:1px; border-bottom:1px solid var(--border); }
+.post-header { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; }
+.post-user { display:flex; align-items:center; gap:10px; }
+.post-username { font-weight:600; font-size:14px; }
+.post-location { font-size:11px; color:var(--text2); }
+.post-img { width:100%; aspect-ratio:1; object-fit:cover; background:var(--bg3); }
+.post-img.landscape { aspect-ratio:4/3; }
+.post-actions { display:flex; align-items:center; padding:6px 12px; gap:12px; }
+.post-actions button { background:none; border:none; cursor:pointer; color:var(--text); font-size:24px; padding:4px; transition:transform .1s; }
+.post-actions button:active { transform:scale(.85); }
+.post-actions .save-btn { margin-right:auto; margin-left:0; }
+.post-likes { padding:0 12px; font-size:14px; font-weight:600; }
+.post-caption { padding:4px 12px 4px; font-size:14px; line-height:1.5; }
+.post-caption span.username { font-weight:700; margin-left:6px; }
+.post-time { padding:2px 12px 8px; font-size:11px; color:var(--text2); }
+.view-comments { padding:0 12px 4px; font-size:13px; color:var(--text2); cursor:pointer; }
+.liked-heart { color:#ed4956; }
+.double-tap-area { position:relative; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-title" style="font-family:cursive;background:linear-gradient(45deg,#f09433,#dc2743,#bc1888);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Insta Mina</div>
+  <div class="header-actions">
+    <a href="notifications.html"><i class="fa fa-heart-o" id="notif-icon"></i></a>
+    <a href="messages.html"><i class="fa fa-paper-plane-o"></i></a>
+  </div>
+</div>
+<div class="page-content">
+  <div class="stories-bar" id="stories-bar">
+    <div class="story-item" onclick="window.location.href='upload-story.html'">
+      <div class="add-story"><i class="fa fa-plus" style="font-size:24px;color:var(--blue)"></i></div>
+      <div class="name">قصتك</div>
+    </div>
+  </div>
+  <div id="feed-container"></div>
+  <div class="loader" id="loader"><div class="spinner"></div></div>
+</div>
+<nav class="nav-bottom">
+  <a href="feed.html" class="active"><i class="fa fa-home"></i></a>
+  <a href="explore.html"><i class="fa fa-search"></i></a>
+  <a href="create.html"><i class="fa fa-plus-square-o" style="font-size:30px"></i></a>
+  <a href="reels.html"><i class="fa fa-film"></i></a>
+  <a href="profile.html"><i class="fa fa-user-o"></i></a>
+</nav>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let currentUser, allPosts = [], currentPage = 0, loading = false;
+const PAGE_SIZE = 5;
+
+async function init() {
+  await InstaMina.init();
+  currentUser = InstaMina.requireAuth();
+  if (!currentUser) return;
+  await loadStories();
+  await loadFeed();
+  checkUnreadNotifs();
+  window.addEventListener('scroll', onScroll);
+}
+
+async function loadStories() {
+  const stories = await InstaMina.getActiveStories();
+  const bar = document.getElementById('stories-bar');
+  const userStoryMap = {};
+  stories.forEach(s => { if (!userStoryMap[s.userId]) userStoryMap[s.userId] = []; userStoryMap[s.userId].push(s); });
+  for (const [uid, sts] of Object.entries(userStoryMap)) {
+    const u = await InstaMina.getUserById(uid);
+    if (!u) continue;
+    const item = document.createElement('div');
+    item.className = 'story-item';
+    item.onclick = () => window.location.href = `stories.html?userId=${uid}`;
+    item.innerHTML = `<div class="story-ring"><div style="width:60px;height:60px">${u.avatar ? `<img src="${u.avatar}" class="avatar" style="width:56px;height:56px">` : `<div class="avatar-placeholder" style="width:56px;height:56px;font-size:20px">${u.username[0].toUpperCase()}</div>`}</div></div><div class="name">${u.username}</div>`;
+    bar.appendChild(item);
+  }
+}
+
+async function loadFeed() {
+  if (loading) return;
+  loading = true;
+  const loader = document.getElementById('loader');
+  loader.style.display = 'flex';
+  if (allPosts.length === 0) {
+    const followingList = await InstaMina.getFollowing(currentUser.id);
+    const followingIds = followingList.map(f => f.followingId);
+    followingIds.push(currentUser.id);
+    const all = await InstaMina.getAllPosts();
+    allPosts = all.filter(p => followingIds.includes(p.userId));
+    if (allPosts.length === 0) allPosts = all.slice(0, 20);
+  }
+  const slice = allPosts.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+  if (slice.length === 0) { loader.style.display = 'none'; loading = false; return; }
+  const container = document.getElementById('feed-container');
+  for (const post of slice) {
+    const user = await InstaMina.getUserById(post.userId);
+    if (!user) continue;
+    const liked = await InstaMina.getLike(post.id, currentUser.id);
+    const saved = await InstaMina.isSaved(currentUser.id, post.id);
+    const card = document.createElement('div');
+    card.className = 'post-card';
+    card.dataset.postId = post.id;
+    card.innerHTML = `
+      <div class="post-header">
+        <div class="post-user" onclick="window.location.href='profile.html?userId=${user.id}'">
+          ${user.avatar ? `<img src="${user.avatar}" class="avatar" style="width:36px;height:36px">` : `<div class="avatar-placeholder" style="width:36px;height:36px;font-size:14px">${user.username[0].toUpperCase()}</div>`}
+          <div><div class="post-username">${user.username}${user.isVerified?'<i class="fa fa-check-circle verified"></i>':''}</div>${post.location?`<div class="post-location"><i class="fa fa-map-marker"></i> ${post.location}</div>`:''}</div>
+        </div>
+        <button onclick="showPostMenu(${post.id},${user.id})"><i class="fa fa-ellipsis-h"></i></button>
+      </div>
+      <div class="double-tap-area" ondblclick="doubleTapLike(event,${post.id})">
+        ${post.image ? `<img src="${post.image}" class="post-img" loading="lazy" alt="منشور" onclick="window.location.href='post.html?id=${post.id}'">` : `<div class="post-img" style="display:flex;align-items:center;justify-content:center;background:var(--bg3)"><i class="fa fa-image" style="font-size:64px;color:var(--border)"></i></div>`}
+      </div>
+      <div class="post-actions">
+        <button class="like-btn ${liked?'liked-heart':''}" onclick="toggleLike(${post.id},this)" data-liked="${!!liked}"><i class="fa ${liked?'fa-heart':'fa-heart-o'}"></i></button>
+        <button onclick="window.location.href='post.html?id=${post.id}'"><i class="fa fa-comment-o"></i></button>
+        <button onclick="window.location.href='share.html?id=${post.id}'"><i class="fa fa-paper-plane-o"></i></button>
+        <button class="save-btn ${saved?'':''}'" onclick="toggleSave(${post.id},this)" data-saved="${saved}"><i class="fa ${saved?'fa-bookmark':'fa-bookmark-o'}"></i></button>
+      </div>
+      <div class="post-likes" id="likes-${post.id}">${InstaMina.formatCount(post.likesCount||0)} إعجاب</div>
+      ${post.caption?`<div class="post-caption"><span class="username" onclick="window.location.href='profile.html?userId=${user.id}'">${user.username}</span>${post.caption}</div>`:''}
+      ${post.commentsCount?`<div class="view-comments" onclick="window.location.href='post.html?id=${post.id}'">عرض ${post.commentsCount>1?'جميع الـ '+post.commentsCount+' تعليقات':'التعليق'}</div>`:''}
+      <div class="post-time">${InstaMina.timeAgo(post.createdAt)}</div>`;
+    container.appendChild(card);
+  }
+  currentPage++;
+  loader.style.display = 'none';
+  loading = false;
+}
+
+async function toggleLike(postId, btn) {
+  const liked = btn.dataset.liked === 'true';
+  const isNowLiked = await InstaMina.toggleLike(postId, currentUser.id);
+  btn.dataset.liked = isNowLiked;
+  btn.innerHTML = `<i class="fa ${isNowLiked?'fa-heart liked-heart':'fa-heart-o'}"></i>`;
+  btn.className = `like-btn ${isNowLiked?'liked-heart':''}`;
+  const likesEl = document.getElementById(`likes-${postId}`);
+  const post = await InstaMina.getPostById(postId);
+  if (likesEl && post) likesEl.textContent = InstaMina.formatCount(post.likesCount||0) + ' إعجاب';
+}
+
+async function toggleSave(postId, btn) {
+  const saved = await InstaMina.toggleSaved(currentUser.id, postId);
+  btn.innerHTML = `<i class="fa ${saved?'fa-bookmark':'fa-bookmark-o'}"></i>`;
+  btn.dataset.saved = saved;
+  showToast(saved ? 'تم الحفظ ✓' : 'تم إلغاء الحفظ');
+}
+
+async function doubleTapLike(e, postId) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const heart = document.createElement('div');
+  heart.className = 'heart-anim';
+  heart.innerHTML = '❤️';
+  heart.style.left = (e.clientX - rect.left - 40) + 'px';
+  heart.style.top = (e.clientY - rect.top - 40) + 'px';
+  e.currentTarget.appendChild(heart);
+  setTimeout(() => heart.remove(), 800);
+  const liked = await InstaMina.getLike(postId, currentUser.id);
+  if (!liked) {
+    const card = document.querySelector(`[data-post-id="${postId}"]`);
+    const btn = card?.querySelector('.like-btn');
+    if (btn) await toggleLike(postId, btn);
+  }
+}
+
+function showPostMenu(postId, userId) {
+  const isOwn = userId === currentUser.id;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `<div class="modal"><div style="display:flex;flex-direction:column">
+    ${isOwn?`<button onclick="deletePost(${postId})" style="padding:16px;color:var(--red);font-weight:600;border-bottom:1px solid var(--border)">حذف المنشور</button>`:''}
+    <button onclick="window.location.href='share.html?id=${postId}'" style="padding:16px;border-bottom:1px solid var(--border)">مشاركة</button>
+    <button onclick="window.location.href='post.html?id=${postId}'" style="padding:16px;border-bottom:1px solid var(--border)">عرض المنشور</button>
+    ${!isOwn?`<button onclick="reportPost(${postId})" style="padding:16px;color:var(--red);border-bottom:1px solid var(--border)">إبلاغ</button>`:''}
+    <button onclick="this.closest('.overlay').remove()" style="padding:16px">إلغاء</button>
+  </div></div>`;
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
+async function deletePost(postId) {
+  document.querySelector('.overlay')?.remove();
+  await InstaMina.deletePost(postId);
+  document.querySelector(`[data-post-id="${postId}"]`)?.remove();
+  showToast('تم حذف المنشور');
+}
+
+async function reportPost(postId) {
+  document.querySelector('.overlay')?.remove();
+  await InstaMina.addReport({ type:'post', targetId: postId, reporterId: currentUser.id, reason:'محتوى مخالف' });
+  showToast('تم إرسال البلاغ');
+}
+
+async function checkUnreadNotifs() {
+  const notifs = await InstaMina.getNotifications(currentUser.id);
+  const unread = notifs.filter(n => !n.read).length;
+  if (unread > 0) document.getElementById('notif-icon').className = 'fa fa-heart';
+}
+
+function onScroll() {
+  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) loadFeed();
+}
+
+function showToast(msg) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  c.appendChild(t); setTimeout(() => t.remove(), 2500);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - تعديل الملف الشخصي</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.avatar-section{display:flex;flex-direction:column;align-items:center;padding:24px;gap:12px;border-bottom:1px solid var(--border)}
+.edit-avatar{position:relative;cursor:pointer}
+.edit-avatar-overlay{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px}
+.change-photo-btn{color:var(--blue);font-weight:600;font-size:15px}
+.field-section{padding:16px;border-bottom:1px solid var(--border)}
+.field-label{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block}
+.field-input{width:100%;border:none;background:transparent;font-size:16px;color:var(--text);outline:none;padding:4px 0;border-bottom:1px solid var(--border)}
+.field-input:focus{border-bottom-color:var(--blue)}
+.char-count{font-size:11px;color:var(--text2);text-align:left;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">تعديل الملف الشخصي</div>
+  <div class="header-actions">
+    <button onclick="saveProfile()" style="color:var(--blue);font-weight:700;font-size:15px">حفظ</button>
+  </div>
+</div>
+<div class="page-content" id="edit-content" style="padding-bottom:20px"></div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let currentUser, newAvatar=null;
+async function init() {
+  await InstaMina.init();
+  currentUser = InstaMina.requireAuth();
+  if(!currentUser) return;
+  render();
+}
+function render() {
+  document.getElementById('edit-content').innerHTML=`
+    <div class="avatar-section">
+      <div class="edit-avatar" onclick="document.getElementById('av-input').click()">
+        ${currentUser.avatar?`<img src="${currentUser.avatar}" class="avatar" style="width:88px;height:88px">`:`<div class="avatar-placeholder" style="width:88px;height:88px;font-size:30px">${currentUser.username[0].toUpperCase()}</div>`}
+        <div class="edit-avatar-overlay"><i class="fa fa-camera"></i></div>
+      </div>
+      <button class="change-photo-btn" onclick="document.getElementById('av-input').click()">تغيير الصورة الشخصية</button>
+      <input type="file" id="av-input" accept="image/*" style="display:none" onchange="previewAvatar(this)">
+    </div>
+    <div class="field-section">
+      <label class="field-label">الاسم</label>
+      <input type="text" class="field-input" id="f-name" value="${currentUser.fullName||''}" maxlength="50" oninput="document.getElementById('name-count').textContent=this.value.length+'/50'">
+      <div class="char-count" id="name-count">${(currentUser.fullName||'').length}/50</div>
+    </div>
+    <div class="field-section">
+      <label class="field-label">اسم المستخدم</label>
+      <input type="text" class="field-input" id="f-username" value="${currentUser.username||''}" maxlength="30">
+    </div>
+    <div class="field-section">
+      <label class="field-label">النبذة الشخصية</label>
+      <textarea class="field-input" id="f-bio" maxlength="150" rows="3" oninput="document.getElementById('bio-count').textContent=this.value.length+'/150'">${currentUser.bio||''}</textarea>
+      <div class="char-count" id="bio-count">${(currentUser.bio||'').length}/150</div>
+    </div>
+    <div class="field-section">
+      <label class="field-label">الموقع الإلكتروني</label>
+      <input type="url" class="field-input" id="f-website" value="${currentUser.website||''}" placeholder="https://...">
+    </div>
+    <div class="field-section">
+      <label class="field-label">البريد الإلكتروني</label>
+      <input type="email" class="field-input" id="f-email" value="${currentUser.email||''}">
+    </div>
+    <div style="padding:16px;border-bottom:1px solid var(--border)">
+      <a href="verify-request.html" style="color:var(--blue);font-weight:600;font-size:14px"><i class="fa fa-check-circle"></i> طلب توثيق الحساب</a>
+    </div>
+    <div style="padding:16px">
+      <button class="btn btn-danger btn-full" onclick="if(confirm('هل تريد حذف حسابك؟'))deleteAccount()">حذف الحساب</button>
+    </div>`;
+}
+function previewAvatar(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    newAvatar=e.target.result;
+    const section=document.querySelector('.edit-avatar');
+    section.innerHTML=`<img src="${newAvatar}" class="avatar" style="width:88px;height:88px"><div class="edit-avatar-overlay"><i class="fa fa-camera"></i></div>`;
+  };
+  reader.readAsDataURL(file);
+}
+async function saveProfile() {
+  const name=document.getElementById('f-name').value.trim();
+  const username=document.getElementById('f-username').value.trim().toLowerCase();
+  const bio=document.getElementById('f-bio').value.trim();
+  const website=document.getElementById('f-website').value.trim();
+  const email=document.getElementById('f-email').value.trim();
+  if(!name||!username) {showToast('الاسم واسم المستخدم مطلوبان');return;}
+  if(!/^[a-z0-9_.]{3,30}$/.test(username)) {showToast('اسم المستخدم غير صالح');return;}
+  if(username!==currentUser.username) {
+    const ex=await InstaMina.getUserByUsername(username);
+    if(ex&&ex.id!==currentUser.id) {showToast('اسم المستخدم مستخدم');return;}
+  }
+  const updates={fullName:name,username,bio,website,email};
+  if(newAvatar) updates.avatar=newAvatar;
+  const updated=await InstaMina.updateUser(currentUser.id,updates);
+  InstaMina.setCurrentUser(updated);
+  currentUser=updated;
+  showToast('تم حفظ التغييرات ✓');
+  setTimeout(()=>window.location.href='profile.html',1000);
+}
+async function deleteAccount() {
+  await InstaMina.deleteUser(currentUser.id);
+  InstaMina.logout();
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

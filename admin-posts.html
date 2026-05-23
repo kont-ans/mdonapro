@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إدارة المنشورات</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+body{background:var(--bg2)}
+.admin-bar{background:linear-gradient(135deg,#0f3460,#16213e);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.admin-bar a{color:rgba(255,255,255,.7);font-size:20px}
+.admin-bar-title{color:#fff;font-weight:700;font-size:17px;flex:1}
+.post-admin-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;margin:0 12px 12px;overflow:hidden}
+.post-admin-header{display:flex;align-items:center;gap:10px;padding:12px}
+.post-admin-img{width:100%;max-height:250px;object-fit:cover;background:var(--bg3)}
+.post-admin-footer{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.post-admin-meta{flex:1;font-size:13px;color:var(--text2)}
+</style>
+</head>
+<body>
+<div class="admin-bar">
+  <a href="admin-dashboard.html"><i class="fa fa-arrow-right"></i></a>
+  <div class="admin-bar-title">إدارة المنشورات</div>
+  <span id="posts-count" style="color:rgba(255,255,255,.7);font-size:13px">...</span>
+</div>
+<div style="padding:12px 0" id="posts-list"><div class="loader"><div class="spinner"></div></div></div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+async function init() {
+  if(sessionStorage.getItem('instamina_admin')!=='true'){window.location.href='admin-login.html';return;}
+  await InstaMina.init();
+  const posts=await InstaMina.getAllPosts();
+  document.getElementById('posts-count').textContent=posts.length+' منشور';
+  const list=document.getElementById('posts-list');
+  list.innerHTML='';
+  for(const p of posts) {
+    const u=await InstaMina.getUserById(p.userId);
+    const card=document.createElement('div'); card.className='post-admin-card'; card.dataset.id=p.id;
+    card.innerHTML=`
+      <div class="post-admin-header">
+        ${u?.avatar?`<img src="${u.avatar}" class="avatar" style="width:36px;height:36px">`:`<div class="avatar-placeholder" style="width:36px;height:36px;font-size:13px">${u?.username[0]?.toUpperCase()||'?'}</div>`}
+        <div><div style="font-weight:700;font-size:13px">${u?.username||'مجهول'}</div><div style="font-size:11px;color:var(--text2)">${InstaMina.timeAgo(p.createdAt)} · #${p.id}</div></div>
+        <span style="margin-right:auto;font-size:11px;background:var(--bg3);padding:3px 8px;border-radius:20px">${p.type==='reel'?'ريل':'منشور'}</span>
+      </div>
+      ${p.image?`<img src="${p.image}" class="post-admin-img">`:''}
+      ${p.caption?`<div style="padding:8px 12px;font-size:13px;color:var(--text2)">${p.caption.slice(0,100)}${p.caption.length>100?'...':''}</div>`:''}
+      <div class="post-admin-footer">
+        <div class="post-admin-meta"><i class="fa fa-heart" style="color:var(--red)"></i> ${p.likesCount||0} · <i class="fa fa-comment" style="color:var(--blue)"></i> ${p.commentsCount||0}</div>
+        <button class="btn btn-danger btn-sm" onclick="deletePost(${p.id})"><i class="fa fa-trash"></i> حذف</button>
+        <a href="post.html?id=${p.id}" class="btn btn-secondary btn-sm"><i class="fa fa-eye"></i> عرض</a>
+      </div>`;
+    list.appendChild(card);
+  }
+  if(posts.length===0) list.innerHTML='<div class="empty-state"><i class="fa fa-image"></i><h3>لا توجد منشورات</h3></div>';
+}
+async function deletePost(id) {
+  if(!confirm('حذف المنشور؟')) return;
+  await InstaMina.deletePost(id);
+  document.querySelector(`[data-id="${id}"]`)?.remove();
+  showToast('تم الحذف');
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - إنشاء</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.create-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:20px}
+.create-card{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;cursor:pointer;transition:all .2s;text-align:center}
+.create-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,149,246,.15)}
+.create-card-icon{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px}
+.create-card-title{font-weight:700;font-size:15px}
+.create-card-desc{font-size:12px;color:var(--text2);line-height:1.4}
+.create-option{display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+.create-option:hover{background:var(--bg2)}
+.create-option-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.create-option-info{flex:1}
+.create-option-title{font-weight:700;font-size:15px}
+.create-option-desc{font-size:13px;color:var(--text2)}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">إنشاء</div>
+</div>
+<div class="page-content" style="padding-bottom:20px">
+  <div style="padding:16px 16px 8px;color:var(--text2);font-size:13px;font-weight:600">اختر نوع المحتوى</div>
+  <div class="create-option" onclick="window.location.href='upload-post.html'">
+    <div class="create-option-icon" style="background:linear-gradient(135deg,#667eea,#764ba2)"><i class="fa fa-image" style="color:#fff"></i></div>
+    <div class="create-option-info">
+      <div class="create-option-title">منشور</div>
+      <div class="create-option-desc">شارك صورة أو مقطع فيديو مع تعليق</div>
+    </div>
+    <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+  </div>
+  <div class="create-option" onclick="window.location.href='upload-story.html'">
+    <div class="create-option-icon" style="background:linear-gradient(135deg,#f09433,#e6683c,#dc2743)"><i class="fa fa-circle" style="color:#fff"></i></div>
+    <div class="create-option-info">
+      <div class="create-option-title">قصة</div>
+      <div class="create-option-desc">تختفي بعد 24 ساعة</div>
+    </div>
+    <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+  </div>
+  <div class="create-option" onclick="window.location.href='upload-reel.html'">
+    <div class="create-option-icon" style="background:linear-gradient(135deg,#4facfe,#00f2fe)"><i class="fa fa-film" style="color:#fff"></i></div>
+    <div class="create-option-info">
+      <div class="create-option-title">ريل</div>
+      <div class="create-option-desc">مقطع فيديو قصير ومسلٍ</div>
+    </div>
+    <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+  </div>
+  <div class="create-option" onclick="window.location.href='camera.html'">
+    <div class="create-option-icon" style="background:linear-gradient(135deg,#43e97b,#38f9d7)"><i class="fa fa-camera" style="color:#fff"></i></div>
+    <div class="create-option-info">
+      <div class="create-option-title">كاميرا</div>
+      <div class="create-option-desc">التقط صورة أو فيديو مباشرة</div>
+    </div>
+    <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+  </div>
+  <div class="create-option" onclick="window.location.href='shop.html'">
+    <div class="create-option-icon" style="background:linear-gradient(135deg,#fa709a,#fee140)"><i class="fa fa-shopping-bag" style="color:#fff"></i></div>
+    <div class="create-option-info">
+      <div class="create-option-title">منتج للمتجر</div>
+      <div class="create-option-desc">أضف منتجاً لمتجرك الشخصي</div>
+    </div>
+    <i class="fa fa-chevron-left" style="color:var(--text2)"></i>
+  </div>
+  <div style="padding:16px;margin-top:8px">
+    <div style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;padding:20px;color:#fff;text-align:center;cursor:pointer" onclick="window.location.href='upload-post.html'">
+      <i class="fa fa-plus-circle" style="font-size:32px;margin-bottom:8px"></i>
+      <div style="font-size:16px;font-weight:700">ابدأ الإنشاء</div>
+      <div style="font-size:13px;opacity:.8;margin-top:4px">شارك لحظاتك مع متابعيك</div>
+    </div>
+  </div>
+</div>
+<nav class="nav-bottom">
+  <a href="feed.html"><i class="fa fa-home"></i></a>
+  <a href="explore.html"><i class="fa fa-search"></i></a>
+  <a href="create.html" class="active"><i class="fa fa-plus-square-o" style="font-size:30px"></i></a>
+  <a href="reels.html"><i class="fa fa-film"></i></a>
+  <a href="profile.html"><i class="fa fa-user-o"></i></a>
+</nav>
+<script src="js/db.js"></script>
+<script>
+async function init(){await InstaMina.init();InstaMina.requireAuth();}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - المتجر</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.shop-banner{background:linear-gradient(135deg,#fa709a,#fee140);padding:24px 16px;text-align:center;color:#fff}
+.shop-banner h2{font-size:24px;font-weight:700;margin-bottom:4px}
+.shop-banner p{font-size:14px;opacity:.9}
+.product-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
+.product-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s}
+.product-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.1);transform:translateY(-2px)}
+.product-img{aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.product-img img{width:100%;height:100%;object-fit:cover}
+.product-info{padding:10px}
+.product-name{font-weight:700;font-size:13px;margin-bottom:4px}
+.product-seller{font-size:11px;color:var(--text2);margin-bottom:6px}
+.product-price{font-size:15px;font-weight:700;color:var(--blue)}
+.product-old-price{font-size:12px;color:var(--text2);text-decoration:line-through;margin-right:6px}
+.product-actions{display:flex;gap:6px;margin-top:8px}
+.shop-categories{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border)}
+.shop-categories::-webkit-scrollbar{display:none}
+.shop-cat{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;background:var(--bg3);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .2s}
+.shop-cat.active{background:var(--blue);color:#fff}
+.coming-soon{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:16px;text-align:center}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">المتجر</div>
+  <div class="header-actions"><i class="fa fa-shopping-cart"></i></div>
+</div>
+<div class="page-content" style="padding-bottom:20px">
+  <div class="shop-banner">
+    <h2>🛍️ متجر إنستا-مينا</h2>
+    <p>اكتشف منتجات مميزة من منشئي المحتوى</p>
+  </div>
+  <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
+    <div style="font-size:14px;font-weight:700">للبائعين</div>
+    <button class="btn btn-primary btn-sm" onclick="showAddProduct()"><i class="fa fa-plus"></i> إضافة منتج</button>
+  </div>
+  <div class="shop-categories">
+    <div class="shop-cat active">الكل</div>
+    <div class="shop-cat">ملابس</div>
+    <div class="shop-cat">إكسسوارات</div>
+    <div class="shop-cat">منزل وديكور</div>
+    <div class="shop-cat">إلكترونيات</div>
+    <div class="shop-cat">فن وحرف</div>
+    <div class="shop-cat">طعام وشراب</div>
+  </div>
+  <div class="product-grid" id="products-grid"></div>
+  <div class="coming-soon" id="coming-soon" style="display:none">
+    <div style="font-size:64px">🛍️</div>
+    <h3>المتجر قيد التطوير</h3>
+    <p style="color:var(--text2)">قريباً ستتمكن من شراء وبيع المنتجات مباشرة عبر إنستا-مينا</p>
+    <button class="btn btn-primary" onclick="showAddProduct()">كن أول بائع!</button>
+  </div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+<nav class="nav-bottom">
+  <a href="feed.html"><i class="fa fa-home"></i></a>
+  <a href="explore.html"><i class="fa fa-search"></i></a>
+  <a href="create.html"><i class="fa fa-plus-square-o" style="font-size:30px"></i></a>
+  <a href="reels.html"><i class="fa fa-film"></i></a>
+  <a href="profile.html"><i class="fa fa-user-o"></i></a>
+</nav>
+<script src="js/db.js"></script>
+<script>
+let products=JSON.parse(localStorage.getItem('instamina_products')||'[]');
+async function init() {
+  await InstaMina.init();
+  InstaMina.requireAuth();
+  renderProducts();
+}
+function renderProducts() {
+  const grid=document.getElementById('products-grid');
+  const cs=document.getElementById('coming-soon');
+  if(products.length===0){grid.style.display='none';cs.style.display='flex';return;}
+  grid.style.display='grid'; cs.style.display='none';
+  grid.innerHTML='';
+  for(const p of products) {
+    const card=document.createElement('div');card.className='product-card';
+    card.innerHTML=`<div class="product-img">${p.image?`<img src="${p.image}">`:`<i class="fa fa-shopping-bag" style="font-size:40px;color:var(--border)"></i>`}</div>
+    <div class="product-info">
+      <div class="product-name">${p.name}</div>
+      <div class="product-seller">@${p.seller}</div>
+      <div><span class="product-old-price">${p.oldPrice?p.oldPrice+' ر.س':''}</span><span class="product-price">${p.price} ر.س</span></div>
+      <div class="product-actions">
+        <button class="btn btn-primary btn-sm" style="flex:1" onclick="addToCart('${p.id}')"><i class="fa fa-shopping-cart"></i> أضف</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveProduct('${p.id}')"><i class="fa fa-heart-o"></i></button>
+      </div>
+    </div>`;
+    grid.appendChild(card);
+  }
+}
+function showAddProduct() {
+  const overlay=document.createElement('div');overlay.className='overlay';
+  overlay.innerHTML=`<div class="modal"><div class="modal-header">إضافة منتج <button onclick="this.closest('.overlay').remove()"><i class="fa fa-times"></i></button></div>
+  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+    <input type="file" id="p-img" accept="image/*" style="display:none" onchange="previewProductImg(this)">
+    <div onclick="document.getElementById('p-img').click()" style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer" id="p-img-prev"><i class="fa fa-image" style="font-size:28px;color:var(--text2)"></i><br><small>إضافة صورة المنتج</small></div>
+    <input type="text" class="form-input" id="p-name" placeholder="اسم المنتج">
+    <input type="number" class="form-input" id="p-price" placeholder="السعر (ر.س)">
+    <input type="text" class="form-input" id="p-desc" placeholder="وصف المنتج">
+    <button class="btn btn-primary btn-full" onclick="saveNewProduct()">نشر المنتج</button>
+  </div></div>`;
+  overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+  document.body.appendChild(overlay);
+}
+function previewProductImg(input) {
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{document.getElementById('p-img-prev').innerHTML=`<img src="${e.target.result}" style="width:100%;border-radius:8px">`;document.getElementById('p-img-prev').dataset.img=e.target.result;};
+  reader.readAsDataURL(file);
+}
+function saveNewProduct() {
+  const currentUser=JSON.parse(localStorage.getItem('instamina_user'));
+  const name=document.getElementById('p-name').value.trim();
+  const price=document.getElementById('p-price').value;
+  const img=document.getElementById('p-img-prev').dataset.img;
+  if(!name||!price){showToast('يرجى ملء الاسم والسعر');return;}
+  const product={id:Date.now().toString(),name,price,image:img||null,seller:currentUser?.username||'مجهول',createdAt:Date.now()};
+  products.unshift(product);
+  localStorage.setItem('instamina_products',JSON.stringify(products));
+  document.querySelector('.overlay')?.remove();
+  renderProducts();
+  showToast('تم إضافة المنتج ✓');
+}
+function addToCart(id){showToast('تم الإضافة إلى السلة 🛒');}
+function saveProduct(id){showToast('تم الحفظ ❤️');}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

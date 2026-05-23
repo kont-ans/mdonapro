@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - الحظر</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.blocked-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">الحسابات المحظورة</div>
+</div>
+<div class="page-content" id="blocked-list"><div class="loader"><div class="spinner"></div></div></div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+async function init() {
+  await InstaMina.init();
+  const currentUser=InstaMina.requireAuth();
+  if(!currentUser) return;
+  const blocked=JSON.parse(localStorage.getItem(`instamina_blocked_${currentUser.id}`)||'[]');
+  const list=document.getElementById('blocked-list');
+  if(blocked.length===0){list.innerHTML='<div class="empty-state"><i class="fa fa-ban"></i><h3>قائمة الحظر فارغة</h3><p>الحسابات التي تحظرها ستظهر هنا</p></div>';return;}
+  list.innerHTML='';
+  for(const userId of blocked){
+    const u=await InstaMina.getUserById(userId);
+    if(!u) continue;
+    const item=document.createElement('div');item.className='blocked-item';
+    item.innerHTML=`${u.avatar?`<img src="${u.avatar}" class="avatar" style="width:44px;height:44px">`:`<div class="avatar-placeholder" style="width:44px;height:44px;font-size:16px">${u.username[0].toUpperCase()}</div>`}
+    <div style="flex:1"><div style="font-weight:700;font-size:14px">${u.username}</div><div style="font-size:12px;color:var(--text2)">${u.fullName||''}</div></div>
+    <button class="btn btn-secondary btn-sm" onclick="unblock(${u.id},this)">إلغاء الحظر</button>`;
+    list.appendChild(item);
+  }
+}
+function unblock(userId,btn) {
+  const currentUser=JSON.parse(localStorage.getItem('instamina_user'));
+  const key=`instamina_blocked_${currentUser.id}`;
+  const blocked=JSON.parse(localStorage.getItem(key)||'[]').filter(id=>id!==userId);
+  localStorage.setItem(key,JSON.stringify(blocked));
+  btn.closest('.blocked-item')?.remove();
+  if(document.querySelectorAll('.blocked-item').length===0) {
+    document.getElementById('blocked-list').innerHTML='<div class="empty-state"><i class="fa fa-ban"></i><h3>قائمة الحظر فارغة</h3></div>';
+  }
+  showToast('تم إلغاء الحظر');
+}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - المتابَعون</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.user-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);transition:background .2s}
+.user-row:hover{background:var(--bg2)}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">يتابع</div>
+</div>
+<div class="page-content" id="following-list"><div class="loader"><div class="spinner"></div></div></div>
+<script src="js/db.js"></script>
+<script>
+async function init() {
+  await InstaMina.init();
+  const currentUser=InstaMina.requireAuth();
+  if(!currentUser) return;
+  const params=new URLSearchParams(location.search);
+  const userId=params.get('userId')||currentUser.id;
+  const followingList=await InstaMina.getFollowing(userId);
+  const list=document.getElementById('following-list');
+  if(followingList.length===0){list.innerHTML='<div class="empty-state"><i class="fa fa-user-plus"></i><h3>لا يتابع أحداً بعد</h3></div>';return;}
+  list.innerHTML='';
+  for(const f of followingList){
+    const u=await InstaMina.getUserById(f.followingId);
+    if(!u) continue;
+    const isMe=u.id===currentUser.id;
+    const isFollowing=!!(await InstaMina.getFollow(currentUser.id,u.id));
+    const row=document.createElement('div');row.className='user-row';
+    row.innerHTML=`<div style="cursor:pointer;display:flex;align-items:center;gap:12px;flex:1" onclick="window.location.href='profile.html?userId=${u.id}'">
+      ${u.avatar?`<img src="${u.avatar}" class="avatar" style="width:44px;height:44px">`:`<div class="avatar-placeholder" style="width:44px;height:44px;font-size:16px">${u.username[0].toUpperCase()}</div>`}
+      <div><div style="font-weight:700;font-size:14px">${u.username}${u.isVerified?'<i class="fa fa-check-circle" style="color:var(--blue);font-size:11px;margin-right:4px"></i>':''}</div><div style="font-size:12px;color:var(--text2)">${u.fullName||''} · ${InstaMina.formatCount(u.followersCount||0)} متابع</div></div>
+    </div>
+    ${!isMe?`<button class="btn btn-sm ${isFollowing?'btn-secondary':'btn-primary'}" onclick="toggleFollow(${u.id},this)">${isFollowing?'يتابع':'متابعة'}</button>`:''}`;
+    list.appendChild(row);
+  }
+}
+async function toggleFollow(id,btn){const cu=JSON.parse(localStorage.getItem('instamina_user'));const now=await InstaMina.toggleFollow(cu.id,id);btn.textContent=now?'يتابع':'متابعة';btn.className=`btn btn-sm ${now?'btn-secondary':'btn-primary'}`;}
+init();
+</script>
+</body>
+</html>

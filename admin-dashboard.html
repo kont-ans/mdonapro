@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - لوحة الإدارة</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+body{background:var(--bg2)}
+.admin-header{background:linear-gradient(135deg,#0f3460,#16213e);color:#fff;padding:20px 16px;position:sticky;top:0;z-index:100}
+.admin-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.admin-logo-text{font-size:20px;font-weight:700;letter-spacing:-0.5px}
+.admin-sub{font-size:13px;opacity:.7}
+.admin-nav{display:flex;gap:6px;overflow-x:auto;padding:12px 16px;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg)}
+.admin-nav::-webkit-scrollbar{display:none}
+.admin-nav-btn{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;background:var(--bg2);color:var(--text);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .2s}
+.admin-nav-btn.active{background:var(--blue);color:#fff}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
+.stat-card{background:var(--bg);border-radius:12px;padding:16px;border:1px solid var(--border)}
+.stat-card-value{font-size:28px;font-weight:700;margin-bottom:4px}
+.stat-card-label{font-size:12px;color:var(--text2);font-weight:600}
+.stat-card-icon{font-size:24px;margin-bottom:8px}
+.section-title{padding:12px 16px;font-size:14px;font-weight:700}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px}
+.admin-table th{padding:10px 12px;text-align:right;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border);font-size:12px;background:var(--bg2)}
+.admin-table td{padding:10px 12px;border-bottom:1px solid var(--border)}
+.admin-table tr:hover td{background:var(--bg2)}
+.badge{padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-blue{background:#e3f0fd;color:var(--blue)}
+.badge-green{background:#e6f9ed;color:#58c322}
+.badge-red{background:#fde8ea;color:var(--red)}
+.badge-gray{background:var(--bg3);color:var(--text2)}
+.maintenance-bar{background:var(--red);color:#fff;padding:10px 16px;font-size:13px;font-weight:600;display:none;text-align:center}
+</style>
+</head>
+<body>
+<div id="maintenance-bar" class="maintenance-bar">⚠️ وضع الصيانة مفعل - المستخدمون لا يستطيعون الدخول</div>
+<div class="admin-header">
+  <div class="admin-header-top">
+    <div><div class="admin-logo-text">🛡️ لوحة الإدارة</div><div class="admin-sub">إنستا-مينا</div></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="toggleMaintenance()" style="background:rgba(255,255,255,.15);color:#fff;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600" id="maintenance-btn">صيانة</button>
+      <button onclick="adminLogout()" style="background:rgba(255,255,255,.15);color:#fff;padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600">خروج</button>
+    </div>
+  </div>
+</div>
+<div class="admin-nav">
+  <div class="admin-nav-btn active" onclick="showSection('dashboard',this)">📊 الرئيسية</div>
+  <div class="admin-nav-btn" onclick="window.location.href='admin-users.html'">👥 المستخدمون</div>
+  <div class="admin-nav-btn" onclick="window.location.href='admin-posts.html'">📸 المنشورات</div>
+  <div class="admin-nav-btn" onclick="window.location.href='admin-reports.html'">🚨 البلاغات</div>
+</div>
+<div id="dashboard-section">
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card skeleton" style="height:100px"></div>
+    <div class="stat-card skeleton" style="height:100px"></div>
+    <div class="stat-card skeleton" style="height:100px"></div>
+    <div class="stat-card skeleton" style="height:100px"></div>
+  </div>
+  <div class="section-title">📋 آخر المنشورات</div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;margin:0 16px;overflow:hidden">
+    <table class="admin-table" id="recent-posts-table">
+      <thead><tr><th>المعرف</th><th>المستخدم</th><th>التعليق</th><th>الإعجابات</th><th>الوقت</th><th>إجراء</th></tr></thead>
+      <tbody id="recent-posts-body"></tbody>
+    </table>
+  </div>
+  <div class="section-title" style="margin-top:16px">👥 آخر المستخدمين</div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;margin:0 16px 16px;overflow:hidden">
+    <table class="admin-table" id="recent-users-table">
+      <thead><tr><th>المعرف</th><th>المستخدم</th><th>البريد</th><th>الحالة</th><th>إجراء</th></tr></thead>
+      <tbody id="recent-users-body"></tbody>
+    </table>
+  </div>
+  <div style="padding:16px;display:flex;gap:10px">
+    <button class="btn btn-secondary" style="flex:1" onclick="exportData()"><i class="fa fa-download"></i> تصدير البيانات</button>
+    <a href="index.html" class="btn btn-secondary" style="flex:1"><i class="fa fa-eye"></i> عرض المنصة</a>
+  </div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+async function checkAdmin() {
+  if(sessionStorage.getItem('instamina_admin')!=='true') { window.location.href='admin-login.html'; return false; }
+  return true;
+}
+async function init() {
+  if(!await checkAdmin()) return;
+  await InstaMina.init();
+  await loadStats();
+  await loadRecentPosts();
+  await loadRecentUsers();
+  const maintenance=await InstaMina.getSetting('maintenance');
+  if(maintenance==='true'){document.getElementById('maintenance-bar').style.display='block';document.getElementById('maintenance-btn').style.background='rgba(255,100,100,.3)';}
+}
+async function loadStats() {
+  const [users,posts]=await Promise.all([InstaMina.getAllUsers(),InstaMina.getAllPosts()]);
+  const comments=await new Promise(r=>{const tx=db?.transaction?.('comments','readonly');if(!tx){r([]);return;}const req=tx.objectStore('comments').getAll();req.onsuccess=()=>r(req.result||[]);});
+  const grid=document.getElementById('stats-grid');
+  const stats=[
+    {icon:'👥',val:users.length,label:'إجمالي المستخدمين',color:'#0095f6'},
+    {icon:'📸',val:posts.length,label:'إجمالي المنشورات',color:'#58c322'},
+    {icon:'💬',val:comments.length,label:'إجمالي التعليقات',color:'#f09433'},
+    {icon:'🚫',val:users.filter(u=>u.isBanned).length,label:'محظورون',color:'#ed4956'},
+  ];
+  grid.innerHTML=stats.map(s=>`<div class="stat-card"><div class="stat-card-icon">${s.icon}</div><div class="stat-card-value" style="color:${s.color}">${s.val}</div><div class="stat-card-label">${s.label}</div></div>`).join('');
+}
+async function loadRecentPosts() {
+  const posts=(await InstaMina.getAllPosts()).slice(0,10);
+  const tbody=document.getElementById('recent-posts-body');
+  tbody.innerHTML='';
+  for(const p of posts) {
+    const u=await InstaMina.getUserById(p.userId);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>#${p.id}</td><td>${u?.username||'مجهول'}</td><td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.caption?.slice(0,30)||'—'}</td><td>${p.likesCount||0}</td><td>${InstaMina.timeAgo(p.createdAt)}</td>
+    <td><button onclick="deletePost(${p.id})" style="color:var(--red);font-size:13px"><i class="fa fa-trash"></i></button></td>`;
+    tbody.appendChild(tr);
+  }
+}
+async function loadRecentUsers() {
+  const users=(await InstaMina.getAllUsers()).slice(0,10);
+  const tbody=document.getElementById('recent-users-body');
+  tbody.innerHTML='';
+  for(const u of users) {
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>#${u.id}</td><td style="font-weight:700">${u.username}${u.isVerified?'✓':''}</td><td style="font-size:11px;color:var(--text2)">${u.email}</td>
+    <td><span class="badge ${u.isBanned?'badge-red':u.isVerified?'badge-blue':'badge-gray'}">${u.isBanned?'محظور':u.isVerified?'موثق':'عادي'}</span></td>
+    <td><button onclick="toggleBan(${u.id})" style="font-size:13px;margin-left:4px" title="${u.isBanned?'فك الحظر':'حظر'}"><i class="fa ${u.isBanned?'fa-unlock':'fa-ban'}" style="color:${u.isBanned?'#58c322':'var(--red)'}"></i></button>
+    <button onclick="verifyUser(${u.id})" style="font-size:13px" title="توثيق"><i class="fa fa-check-circle" style="color:var(--blue)"></i></button></td>`;
+    tbody.appendChild(tr);
+  }
+}
+async function deletePost(id){if(!confirm('حذف المنشور؟'))return;await InstaMina.deletePost(id);showToast('تم الحذف');await loadRecentPosts();}
+async function toggleBan(id){const u=await InstaMina.getUserById(id);await InstaMina.updateUser(id,{isBanned:!u.isBanned});showToast(u.isBanned?'تم فك الحظر':'تم الحظر');await loadRecentUsers();}
+async function verifyUser(id){await InstaMina.updateUser(id,{isVerified:true});showToast('تم التوثيق');await loadRecentUsers();}
+async function toggleMaintenance(){
+  const current=await InstaMina.getSetting('maintenance');
+  const newVal=current==='true'?'false':'true';
+  await InstaMina.setSetting('maintenance',newVal);
+  const bar=document.getElementById('maintenance-bar');
+  const btn=document.getElementById('maintenance-btn');
+  if(newVal==='true'){bar.style.display='block';btn.style.background='rgba(255,100,100,.3)';showToast('تم تفعيل وضع الصيانة');}
+  else{bar.style.display='none';btn.style.background='rgba(255,255,255,.15)';showToast('تم إيقاف وضع الصيانة');}
+}
+async function exportData(){const data=await InstaMina.exportAll();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`instamina_export_${Date.now()}.json`;a.click();showToast('تم التصدير');}
+function adminLogout(){sessionStorage.removeItem('instamina_admin');window.location.href='admin-login.html';}
+function showSection(s,el){document.querySelectorAll('.admin-nav-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

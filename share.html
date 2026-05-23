@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - مشاركة</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+.share-option{display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+.share-option:hover{background:var(--bg2)}
+.share-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.user-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="javascript:history.back()" class="back-btn"><i class="fa fa-arrow-right"></i></a>
+  <div class="header-title">مشاركة</div>
+</div>
+<div class="page-content" style="padding-bottom:20px">
+  <div style="padding:12px 16px">
+    <div style="border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px">
+      <input type="text" id="link-input" value="" readonly style="flex:1;border:none;background:transparent;font-size:13px;color:var(--text2);outline:none">
+      <button onclick="copyLink()" style="color:var(--blue);font-weight:700;font-size:13px">نسخ</button>
+    </div>
+  </div>
+  <div style="padding:8px 16px;font-size:12px;font-weight:700;color:var(--text2)">مشاركة عبر</div>
+  <div class="share-option" onclick="shareVia('whatsapp')">
+    <div class="share-icon" style="background:#25D366"><i class="fa fa-whatsapp" style="color:#fff"></i></div>
+    <div><div style="font-weight:700">واتساب</div><div style="font-size:12px;color:var(--text2)">مشاركة في واتساب</div></div>
+  </div>
+  <div class="share-option" onclick="shareVia('telegram')">
+    <div class="share-icon" style="background:#0088CC"><i class="fa fa-telegram" style="color:#fff"></i></div>
+    <div><div style="font-weight:700">تيليجرام</div><div style="font-size:12px;color:var(--text2)">مشاركة في تيليجرام</div></div>
+  </div>
+  <div class="share-option" onclick="shareVia('twitter')">
+    <div class="share-icon" style="background:#1DA1F2"><i class="fa fa-twitter" style="color:#fff"></i></div>
+    <div><div style="font-weight:700">تويتر / X</div><div style="font-size:12px;color:var(--text2)">نشر على تويتر</div></div>
+  </div>
+  <div class="share-option" onclick="nativeShare()">
+    <div class="share-icon" style="background:var(--bg3)"><i class="fa fa-share-alt" style="color:var(--text)"></i></div>
+    <div><div style="font-weight:700">مشاركة أخرى</div><div style="font-size:12px;color:var(--text2)">خيارات المشاركة الأخرى</div></div>
+  </div>
+  <div style="padding:12px 16px;font-size:12px;font-weight:700;color:var(--text2);border-top:8px solid var(--bg2)">إرسال لمستخدم</div>
+  <div id="users-list"></div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+<script src="js/db.js"></script>
+<script>
+let currentUser, postId;
+async function init() {
+  await InstaMina.init();
+  currentUser=InstaMina.requireAuth();
+  if(!currentUser) return;
+  const params=new URLSearchParams(location.search);
+  postId=params.get('id');
+  const link=`${location.origin}${location.pathname.replace('share.html','post.html')}?id=${postId}`;
+  document.getElementById('link-input').value=link;
+  const users=await InstaMina.getAllUsers();
+  const list=document.getElementById('users-list');
+  for(const u of users.filter(u=>u.id!==currentUser.id).slice(0,10)) {
+    const row=document.createElement('div');row.className='user-row';
+    row.onclick=()=>sendToUser(u.id,u.username);
+    row.innerHTML=`${u.avatar?`<img src="${u.avatar}" class="avatar" style="width:44px;height:44px">`:`<div class="avatar-placeholder" style="width:44px;height:44px;font-size:16px">${u.username[0].toUpperCase()}</div>`}
+    <div style="flex:1"><div style="font-weight:700;font-size:14px">${u.username}</div><div style="font-size:12px;color:var(--text2)">${u.fullName||''}</div></div>
+    <button class="btn btn-sm btn-secondary" id="send-${u.id}">إرسال</button>`;
+    list.appendChild(row);
+  }
+}
+function copyLink(){const i=document.getElementById('link-input');i.select();navigator.clipboard?.writeText(i.value);showToast('تم نسخ الرابط ✓');}
+function shareVia(platform){const link=document.getElementById('link-input').value;const urls={whatsapp:`https://wa.me/?text=${encodeURIComponent('شاهد هذا المنشور: '+link)}`,telegram:`https://t.me/share/url?url=${encodeURIComponent(link)}`,twitter:`https://twitter.com/intent/tweet?url=${encodeURIComponent(link)}`};window.open(urls[platform],'_blank');}
+function nativeShare(){if(navigator.share)navigator.share({title:'إنستا-مينا',url:document.getElementById('link-input').value}).catch(()=>{});else showToast('جهازك لا يدعم المشاركة المباشرة');}
+async function sendToUser(userId,username){await InstaMina.sendMessage(currentUser.id,userId,`🔗 شاهد هذا المنشور: ${document.getElementById('link-input').value}`);const btn=document.getElementById(`send-${userId}`);btn.textContent='تم ✓';btn.disabled=true;showToast(`تم الإرسال إلى ${username}`);}
+function showToast(msg){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast';t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),2500);}
+init();
+</script>
+</body>
+</html>

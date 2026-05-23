@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>إنستا-مينا - القصص</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="css/shared.css">
+<style>
+body{background:#000;overflow:hidden}
+.story-viewer{position:fixed;inset:0;background:#000;z-index:999;display:flex;flex-direction:column}
+.story-progress-bar{display:flex;gap:4px;padding:12px 12px 0}
+.progress-seg{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.3);overflow:hidden}
+.progress-fill{height:100%;background:#fff;border-radius:2px;transition:width linear}
+.story-header{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.story-content{flex:1;position:relative;display:flex;align-items:center;justify-content:center}
+.story-image{width:100%;height:100%;object-fit:cover;position:absolute}
+.story-text-overlay{position:absolute;color:#fff;font-size:22px;font-weight:700;text-align:center;padding:20px;text-shadow:0 2px 10px rgba(0,0,0,.5);z-index:5}
+.story-footer{padding:12px;display:flex;align-items:center;gap:10px;z-index:10;position:relative}
+.story-reply-input{flex:1;background:transparent;border:1.5px solid rgba(255,255,255,.5);border-radius:24px;padding:10px 16px;color:#fff;font-size:14px;outline:none}
+.story-reply-input::placeholder{color:rgba(255,255,255,.5)}
+.tap-zone{position:absolute;top:0;bottom:0;width:40%;z-index:4}
+.tap-zone.left{left:0}
+.tap-zone.right{right:0}
+.story-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)}
+.story-placeholder-text{color:#fff;font-size:24px;font-weight:700;text-align:center;padding:40px}
+</style>
+</head>
+<body>
+<div class="story-viewer" id="story-viewer">
+  <div class="story-progress-bar" id="progress-bar"></div>
+  <div class="story-header" id="story-header"></div>
+  <div class="story-content" id="story-content">
+    <div class="tap-zone left" onclick="prevStory()"></div>
+    <div class="tap-zone right" onclick="nextStory()"></div>
+  </div>
+  <div class="story-footer">
+    <input type="text" class="story-reply-input" id="reply-input" placeholder="أرسل رسالة...">
+    <button onclick="sendReply()" style="color:#fff;font-size:22px"><i class="fa fa-paper-plane"></i></button>
+    <button onclick="likeStory()" style="color:#fff;font-size:22px"><i class="fa fa-heart-o" id="story-heart"></i></button>
+  </div>
+</div>
+<script src="js/db.js"></script>
+<script>
+let currentUser, stories=[], currentIndex=0, timer=null, progress=0, progressInterval=null;
+const STORY_DURATION=5000;
+async function init() {
+  await InstaMina.init();
+  currentUser=InstaMina.requireAuth();
+  if(!currentUser) return;
+  const params=new URLSearchParams(location.search);
+  const userId=params.get('userId');
+  const all=await InstaMina.getActiveStories();
+  stories=userId?all.filter(s=>s.userId===Number(userId)):all;
+  if(stories.length===0){window.location.href='feed.html';return;}
+  buildProgressBar();
+  showStory(0);
+}
+function buildProgressBar() {
+  const bar=document.getElementById('progress-bar');
+  bar.innerHTML=stories.map((_,i)=>`<div class="progress-seg" id="seg-${i}"><div class="progress-fill" id="fill-${i}" style="width:0%"></div></div>`).join('');
+}
+async function showStory(index) {
+  clearTimeout(timer);
+  clearInterval(progressInterval);
+  progress=0;
+  currentIndex=index;
+  if(index>=stories.length){window.location.href='feed.html';return;}
+  const story=stories[index];
+  const user=await InstaMina.getUserById(story.userId);
+  document.getElementById('story-header').innerHTML=`
+    <div onclick="window.location.href='profile.html?userId=${user?.id}'" style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+      ${user?.avatar?`<img src="${user.avatar}" class="avatar" style="width:36px;height:36px;border:2px solid #fff">`:`<div class="avatar-placeholder" style="width:36px;height:36px;font-size:13px;border:2px solid #fff">${user?.username[0]?.toUpperCase()||'?'}</div>`}
+      <div><div style="color:#fff;font-weight:700;font-size:14px">${user?.username||''}</div><div style="color:rgba(255,255,255,.7);font-size:11px">${InstaMina.timeAgo(story.createdAt)}</div></div>
+    </div>
+    <button onclick="window.location.href='feed.html'" style="color:#fff;font-size:22px"><i class="fa fa-times"></i></button>`;
+  const content=document.getElementById('story-content');
+  const prev=content.querySelector('.story-image,.story-placeholder,.story-text-overlay');
+  if(prev) prev.remove();
+  if(story.image) {
+    const img=document.createElement('img');
+    img.className='story-image'; img.src=story.image;
+    content.insertBefore(img,content.firstChild);
+  } else {
+    const ph=document.createElement('div');
+    ph.className='story-placeholder';
+    ph.innerHTML=`<div class="story-placeholder-text">${story.text||''}</div>`;
+    content.insertBefore(ph,content.firstChild);
+  }
+  if(story.text&&story.image) {
+    const overlay=document.createElement('div');
+    overlay.className='story-text-overlay'; overlay.textContent=story.text;
+    content.insertBefore(overlay,content.querySelector('.tap-zone'));
+  }
+  document.querySelectorAll('.progress-fill').forEach((f,i)=>{f.style.width=i<index?'100%':'0%';if(i===index){f.style.transition='none';}});
+  const fill=document.getElementById(`fill-${index}`);
+  progress=0;
+  progressInterval=setInterval(()=>{
+    progress+=100/(STORY_DURATION/100);
+    fill.style.transition='none';
+    fill.style.width=Math.min(progress,100)+'%';
+    if(progress>=100) nextStory();
+  },100);
+  timer=setTimeout(()=>nextStory(),STORY_DURATION);
+}
+function nextStory(){showStory(currentIndex+1);}
+function prevStory(){showStory(Math.max(0,currentIndex-1));}
+function likeStory(){
+  const heart=document.getElementById('story-heart');
+  heart.className='fa fa-heart';
+  heart.style.color='#ed4956';
+  setTimeout(()=>{heart.className='fa fa-heart-o';heart.style.color='#fff';},800);
+}
+async function sendReply(){
+  const input=document.getElementById('reply-input');
+  const text=input.value.trim();
+  if(!text||!stories[currentIndex]) return;
+  const story=stories[currentIndex];
+  await InstaMina.sendMessage(currentUser.id,story.userId,`💬 رد على قصتك: ${text}`);
+  input.value='';
+  const sent=document.createElement('div');
+  sent.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.2);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;z-index:9999';
+  sent.textContent='تم إرسال الرد';
+  document.body.appendChild(sent);
+  setTimeout(()=>sent.remove(),1500);
+}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')nextStory();if(e.key==='ArrowRight')prevStory();if(e.key==='Escape')window.location.href='feed.html';});
+init();
+</script>
+</body>
+</html>
